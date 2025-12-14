@@ -170,7 +170,7 @@ const TranscriptionDisplay: React.FC<TranscriptionDisplayProps> = ({
         if (i % 3 === 1) {
           const url = parts[i + 1];
           return (
-            <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-khaki-600 hover:underline font-medium">
+            <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-khaki-600 dark:text-khaki-400 hover:underline font-medium">
               {part}
             </a>
           );
@@ -184,11 +184,11 @@ const TranscriptionDisplay: React.FC<TranscriptionDisplayProps> = ({
 
   if (error) {
     return (
-      <div className="text-center bg-beige-100 border border-red-300/50 rounded-2xl p-8 shadow-sm">
+      <div className="text-center bg-beige-100 dark:bg-gray-800 border border-red-300/50 dark:border-red-700/50 rounded-2xl p-8 shadow-sm">
         <ErrorIcon className="w-12 h-12 text-red-500 mx-auto mb-4" />
-        <p className="text-red-700 font-semibold text-lg">An error occurred</p>
-        <p className="text-brown-700 mt-2">{error}</p>
-        <button onClick={onClear} className="mt-6 px-6 py-2 bg-khaki-600 text-white font-bold rounded-lg hover:bg-khaki-700 focus:outline-none focus:ring-2 focus:ring-khaki-500">
+        <p className="text-red-700 dark:text-red-400 font-semibold text-lg">An error occurred</p>
+        <p className="text-brown-700 dark:text-gray-300 mt-2">{error}</p>
+        <button onClick={onClear} className="mt-6 px-6 py-2 bg-khaki-600 text-white font-bold rounded-lg hover:bg-khaki-700 dark:hover:bg-khaki-600 focus:outline-none focus:ring-2 focus:ring-khaki-500">
           Try Again
         </button>
       </div>
@@ -199,13 +199,13 @@ const TranscriptionDisplay: React.FC<TranscriptionDisplayProps> = ({
     return (
       <div className="space-y-6">
         <div className="relative">
-            <div className="w-full max-h-[70vh] space-y-6 text-brown-800 overflow-y-auto pr-4">
+            <div className="w-full max-h-[70vh] space-y-6 text-brown-800 dark:text-gray-200 overflow-y-auto pr-4">
                <SentimentDisplay sentiment={transcription.sentiment?.overall} />
 
                 {transcription.sentiment?.trend && transcription.sentiment.trend.length > 0 && (
-                  <div className="bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6">
-                    <h3 className="flex items-center space-x-2 font-semibold text-brown-800 text-lg mb-4">
-                      <SentimentTrendIcon className="w-6 h-6 text-khaki-500"/>
+                  <div className="bg-beige-100 dark:bg-gray-800 border border-beige-200/80 dark:border-gray-700 rounded-2xl shadow-sm p-6">
+                    <h3 className="flex items-center space-x-2 font-semibold text-brown-800 dark:text-gray-200 text-lg mb-4">
+                      <SentimentTrendIcon className="w-6 h-6 text-khaki-500 dark:text-khaki-400"/>
                       <span>Sentiment Trend</span>
                     </h3>
                     <SentimentTrendChart data={transcription.sentiment.trend} />
@@ -213,26 +213,26 @@ const TranscriptionDisplay: React.FC<TranscriptionDisplayProps> = ({
                 )}
                 
                 {transcription.summary && (
-                  <div className="bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6">
-                    <h3 className="flex items-center space-x-2 font-semibold text-brown-800 text-lg mb-4">
-                      <SummaryIcon className="w-6 h-6 text-khaki-500"/>
+                  <div className="bg-beige-100 dark:bg-gray-800 border border-beige-200/80 dark:border-gray-700 rounded-2xl shadow-sm p-6">
+                    <h3 className="flex items-center space-x-2 font-semibold text-brown-800 dark:text-gray-200 text-lg mb-4">
+                      <SummaryIcon className="w-6 h-6 text-khaki-500 dark:text-khaki-400"/>
                       <span>Summary</span>
                     </h3>
-                    <div className="prose prose-sm max-w-none text-brown-700 whitespace-pre-wrap">{renderClickableLinks(transcription.summary)}</div>
+                    <div className="prose prose-sm max-w-none text-brown-700 dark:text-gray-300 whitespace-pre-wrap">{renderClickableLinks(transcription.summary)}</div>
                   </div>
                 )}
 
                 {transcription.sources && transcription.sources.length > 0 && (
-                  <div className="bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6">
-                    <h3 className="flex items-center space-x-2 font-semibold text-brown-800 text-lg mb-2">
-                      <LinkIcon className="w-6 h-6 text-khaki-500"/>
+                  <div className="bg-beige-100 dark:bg-gray-800 border border-beige-200/80 dark:border-gray-700 rounded-2xl shadow-sm p-6">
+                    <h3 className="flex items-center space-x-2 font-semibold text-brown-800 dark:text-gray-200 text-lg mb-2">
+                      <LinkIcon className="w-6 h-6 text-khaki-500 dark:text-khaki-400"/>
                       <span>Sources</span>
                     </h3>
-                    <p className="text-xs text-brown-500 mb-4">The following web pages were consulted by the AI to provide a factually grounded summary.</p>
+                    <p className="text-xs text-brown-500 dark:text-gray-400 mb-4">The following web pages were consulted by the AI to provide a factually grounded summary.</p>
                     <ul className="list-disc list-inside space-y-2">
                       {transcription.sources.map((source: any, index: number) => (
                         <li key={index} className="text-sm">
-                          <a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="text-khaki-600 hover:underline">
+                          <a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="text-khaki-600 dark:text-khaki-400 hover:underline">
                             {source.web.title || source.web.uri}
                           </a>
                         </li>
@@ -242,9 +242,9 @@ const TranscriptionDisplay: React.FC<TranscriptionDisplayProps> = ({
                 )}
 
                 {transcription.entities && Object.keys(transcription.entities).length > 0 && (
-                    <div className="bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6">
-                        <h3 className="flex items-center space-x-2 font-semibold text-brown-800 text-lg mb-4">
-                          <EntitiesIcon className="w-6 h-6 text-khaki-500"/>
+                    <div className="bg-beige-100 dark:bg-gray-800 border border-beige-200/80 dark:border-gray-700 rounded-2xl shadow-sm p-6">
+                        <h3 className="flex items-center space-x-2 font-semibold text-brown-800 dark:text-gray-200 text-lg mb-4">
+                          <EntitiesIcon className="w-6 h-6 text-khaki-500 dark:text-khaki-400"/>
                           <span>Extracted Entities</span>
                         </h3>
                         <div className="space-y-4">
@@ -264,7 +264,7 @@ const TranscriptionDisplay: React.FC<TranscriptionDisplayProps> = ({
                     </div>
                 )}
 
-                <div className="bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6">
+                <div className="bg-beige-100 dark:bg-gray-800 border border-beige-200/80 dark:border-gray-700 rounded-2xl shadow-sm p-6">
                      {isEditing ? (
                         <div className="space-y-4">
                           {editedTranscription.map((segment, index) => (
@@ -289,7 +289,7 @@ const TranscriptionDisplay: React.FC<TranscriptionDisplayProps> = ({
                             <div className="flex-1">
                               <p>
                                 <span className="font-bold text-khaki-600 mr-2">{segment.speaker}:</span>
-                                <span className="text-brown-700 whitespace-pre-wrap">{segment.text}</span>
+                                <span className="text-brown-700 dark:text-gray-300 whitespace-pre-wrap">{segment.text}</span>
                               </p>
                             </div>
                           </div>
