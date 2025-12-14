@@ -31,9 +31,9 @@ interface NavLinkProps {
 
 const NavLink: React.FC<NavLinkProps> = ({ icon, label, active, disabled, onClick, tooltip }) => {
   const baseClasses = "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors duration-200 w-full text-left";
-  const activeClasses = "bg-khaki-600 text-white shadow-sm";
-  const inactiveClasses = "text-brown-700 hover:bg-beige-200 hover:text-brown-800";
-  const disabledClasses = "text-brown-500/60 cursor-not-allowed opacity-70";
+  const activeClasses = "bg-khaki-600 dark:bg-khaki-600 text-white shadow-sm";
+  const inactiveClasses = "text-brown-700 dark:text-gray-300 hover:bg-beige-200 dark:hover:bg-gray-700 hover:text-brown-800 dark:hover:text-gray-100";
+  const disabledClasses = "text-brown-500/60 dark:text-gray-500 cursor-not-allowed opacity-70";
 
   const finalClasses = `${baseClasses} ${disabled ? disabledClasses : (active ? activeClasses : inactiveClasses)}`;
 
@@ -56,13 +56,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, estimatedTokens, onRunTests, 
   const isChatbotActive = activeView === 'chatbot';
 
   return (
-    <nav className={`flex-shrink-0 bg-beige-100 border-r border-beige-200 transition-all duration-300 ${isOpen ? 'w-64' : 'w-0'} overflow-hidden`}>
+    <nav className={`flex-shrink-0 bg-beige-100 dark:bg-gray-800 border-r border-beige-200 dark:border-gray-700 transition-all duration-300 ${isOpen ? 'w-64' : 'w-0'} overflow-hidden`}>
       <div className="flex flex-col h-full">
-        <div className="flex items-center space-x-3 p-4 h-16 border-b border-beige-200">
-            <div className="p-1.5 bg-khaki-600 rounded-lg">
+        <div className="flex items-center space-x-3 p-4 h-16 border-b border-beige-200 dark:border-gray-700">
+            <div className="p-1.5 bg-khaki-600 dark:bg-khaki-600 rounded-lg">
                 <TranscriptedAIIcon className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-brown-800 font-poppins">TranscriptedAI</h1>
+            <h1 className="text-xl font-bold text-brown-800 dark:text-gray-100 font-poppins">TranscriptedAI</h1>
         </div>
         <div className="flex-1 p-4 space-y-2">
             <NavLink icon={<DashboardIcon className="w-6 h-6"/>} label="Dashboard" onClick={onShowDashboard} active={isDashboardActive} />
@@ -77,14 +77,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, estimatedTokens, onRunTests, 
             />
             <NavLink icon={<SettingsIcon className="w-6 h-6"/>} label="Settings" disabled tooltip="Coming soon!" />
         </div>
-        <div className="p-4 border-t border-beige-200 space-y-4">
+        <div className="p-4 border-t border-beige-200 dark:border-gray-700 space-y-4">
             {estimatedTokens !== null && activeView !== 'history' && (
-              <div className="p-3 bg-beige-200/70 rounded-lg text-xs text-brown-700">
+              <div className="p-3 bg-beige-200/70 dark:bg-gray-700/70 rounded-lg text-xs text-brown-700 dark:text-gray-300">
                 <div className="flex items-center space-x-2.5">
-                  <TokenIcon className="w-5 h-5 text-khaki-700 flex-shrink-0" />
+                  <TokenIcon className="w-5 h-5 text-khaki-700 dark:text-khaki-500 flex-shrink-0" />
                   <div>
                     <p className="font-semibold">~ {estimatedTokens.toLocaleString()} tokens</p>
-                    <p className="text-brown-500">Estimated for current file</p>
+                    <p className="text-brown-500 dark:text-gray-400">Estimated for current file</p>
                   </div>
                 </div>
               </div>

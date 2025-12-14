@@ -17,36 +17,36 @@ const InsightsPanel: React.FC<{ transcription: TranscriptionResult | null; }> = 
   const groundingSources = useMemo(() => transcription?.sources?.slice(0, 5) ?? [], [transcription]);
 
   return (
-    <aside className="fixed top-0 right-0 h-full w-[350px] bg-beige-100/70 backdrop-blur-xl border-l border-beige-200/80 p-6 overflow-y-auto transition-transform duration-300 transform translate-x-0 hidden lg:block">
+    <aside className="fixed top-0 right-0 h-full w-[350px] bg-beige-100/70 dark:bg-gray-800/90 backdrop-blur-xl border-l border-beige-200/80 dark:border-gray-700 p-6 overflow-y-auto transition-transform duration-300 transform translate-x-0 hidden lg:block">
       <div className="space-y-8">
-        <h2 className="text-xl font-bold text-brown-800 flex items-center space-x-2">
-            <AnalyticsIcon className="w-6 h-6 text-khaki-600"/>
+        <h2 className="text-xl font-bold text-brown-800 dark:text-gray-100 flex items-center space-x-2">
+            <AnalyticsIcon className="w-6 h-6 text-khaki-600 dark:text-khaki-400"/>
             <span>Transcription Insights</span>
         </h2>
 
-        <div className="bg-beige-100/80 p-4 rounded-xl border border-beige-200/80 shadow-sm">
-            <h3 className="font-semibold text-brown-800 flex items-center space-x-2 mb-3">
-                <SpeakerIcon className="w-5 h-5 text-brown-500"/>
+        <div className="bg-beige-100/80 dark:bg-gray-900/80 p-4 rounded-xl border border-beige-200/80 dark:border-gray-700 shadow-sm">
+            <h3 className="font-semibold text-brown-800 dark:text-gray-200 flex items-center space-x-2 mb-3">
+                <SpeakerIcon className="w-5 h-5 text-brown-500 dark:text-gray-400"/>
                 <span>Speaker Distribution</span>
             </h3>
             <SpeakerDistributionChart data={speakerData} />
         </div>
 
-        <div className="bg-beige-100/80 p-4 rounded-xl border border-beige-200/80 shadow-sm">
-            <h3 className="font-semibold text-brown-800 flex items-center space-x-2 mb-3">
-                <SentimentTrendIcon className="w-5 h-5 text-brown-500"/>
+        <div className="bg-beige-100/80 dark:bg-gray-900/80 p-4 rounded-xl border border-beige-200/80 dark:border-gray-700 shadow-sm">
+            <h3 className="font-semibold text-brown-800 dark:text-gray-200 flex items-center space-x-2 mb-3">
+                <SentimentTrendIcon className="w-5 h-5 text-brown-500 dark:text-gray-400"/>
                 <span>Sentiment Trend</span>
             </h3>
             <SentimentTrendChart data={sentimentTrendData} />
         </div>
 
         {groundingSources.length > 0 && (
-          <div className="bg-beige-100/80 p-4 rounded-xl border border-beige-200/80 shadow-sm">
-            <h3 className="font-semibold text-brown-800 flex items-center space-x-2 mb-3">
-                <LinkIcon className="w-5 h-5 text-brown-500"/>
+          <div className="bg-beige-100/80 dark:bg-gray-900/80 p-4 rounded-xl border border-beige-200/80 dark:border-gray-700 shadow-sm">
+            <h3 className="font-semibold text-brown-800 dark:text-gray-200 flex items-center space-x-2 mb-3">
+                <LinkIcon className="w-5 h-5 text-brown-500 dark:text-gray-400"/>
                 <span>Grounding Sources</span>
             </h3>
-            <p className="text-xs text-brown-500 mb-3">
+            <p className="text-xs text-brown-500 dark:text-gray-400 mb-3">
               To provide an accurate and up-to-date summary, the AI consulted the following sources:
             </p>
             <ul className="space-y-2.5">
@@ -56,7 +56,7 @@ const InsightsPanel: React.FC<{ transcription: TranscriptionResult | null; }> = 
                     href={source.web.uri} 
                     target="_blank" 
                     rel="noopener noreferrer" 
-                    className="text-khaki-700 hover:underline break-words"
+                    className="text-khaki-700 dark:text-khaki-400 hover:underline break-words"
                     title={source.web.uri}
                   >
                     {source.web.title || 'Untitled Source'}

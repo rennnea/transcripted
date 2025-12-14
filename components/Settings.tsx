@@ -68,10 +68,10 @@ const SampleOutput: React.FC<SampleOutputProps> = ({
   const entitiesText = "People:\n  - John Doe, Jane Smith\nOrganizations:\n  - Sample Corp";
 
   return (
-    <div className="mt-6 pt-4 border-t border-beige-200">
-      <h4 className="text-sm font-semibold text-brown-800 mb-2">Output Preview</h4>
-      <p className="text-xs text-brown-500 mb-3">This is how your final transcription file will be structured based on your current settings.</p>
-      <pre className="text-xs p-4 bg-beige-50 border border-beige-200 rounded-lg whitespace-pre-wrap font-sans text-brown-700 max-h-48 overflow-y-auto">
+    <div className="mt-6 pt-4 border-t border-beige-200 dark:border-gray-700">
+      <h4 className="text-sm font-semibold text-brown-800 dark:text-gray-200 mb-2">Output Preview</h4>
+      <p className="text-xs text-brown-500 dark:text-gray-400 mb-3">This is how your final transcription file will be structured based on your current settings.</p>
+      <pre className="text-xs p-4 bg-beige-50 dark:bg-gray-900 border border-beige-200 dark:border-gray-700 rounded-lg whitespace-pre-wrap font-sans text-brown-700 dark:text-gray-300 max-h-48 overflow-y-auto">
         <code>
           {enableDiarization ? diarizationText : noDiarizationText}
           {enableSummary && `\n\n--- SUMMARY ---\n${summaryContent}`}
@@ -92,7 +92,7 @@ interface ChipSelectorProps {
 
 const ChipSelector: React.FC<ChipSelectorProps> = ({ label, options, selectedValue, onSelect }) => (
     <div>
-        <label className="block text-xs font-medium text-brown-500 mb-1.5">{label}</label>
+        <label className="block text-xs font-medium text-brown-500 dark:text-gray-400 mb-1.5">{label}</label>
         <div className="flex items-center space-x-2">
             {options.map((option) => (
                 <button
@@ -101,7 +101,7 @@ const ChipSelector: React.FC<ChipSelectorProps> = ({ label, options, selectedVal
                     className={`px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap transition-all duration-200
                         ${selectedValue === option
                             ? 'bg-khaki-600 text-white shadow-sm'
-                            : 'bg-beige-200 text-brown-700 hover:bg-beige-300'
+                            : 'bg-beige-200 dark:bg-gray-700 text-brown-700 dark:text-gray-300 hover:bg-beige-300 dark:hover:bg-gray-600'
                         }`
                     }
                 >
@@ -116,12 +116,12 @@ const SettingsToggle: React.FC<{label: string, description: string, enabled: boo
 ({label, description, enabled, onToggle, id, tooltip}) => (
     <div className="flex items-center justify-between" title={tooltip}>
       <div>
-        <span className="text-sm font-medium text-brown-800">{label}</span>
-        <p className="text-xs text-brown-500 mt-1">{description}</p>
+        <span className="text-sm font-medium text-brown-800 dark:text-gray-200">{label}</span>
+        <p className="text-xs text-brown-500 dark:text-gray-400 mt-1">{description}</p>
       </div>
       <label htmlFor={id} className="relative inline-flex items-center cursor-pointer">
         <input type="checkbox" id={id} className="sr-only peer" checked={enabled} onChange={(e) => onToggle(e.target.checked)} />
-        <div className="w-11 h-6 bg-beige-200 rounded-full peer peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-khaki-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-beige-50 after:border-beige-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-khaki-600"></div>
+        <div className="w-11 h-6 bg-beige-200 dark:bg-gray-700 rounded-full peer peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-khaki-300 dark:peer-focus:ring-khaki-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-beige-50 dark:after:bg-gray-300 after:border-beige-300 dark:after:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-khaki-600"></div>
       </label>
     </div>
 );
@@ -138,12 +138,12 @@ const Settings: React.FC<SettingsProps> = ({
   enableSearchGrounding, onSearchGroundingChange,
 }) => {
   return (
-    <div className="space-y-6 bg-beige-100 p-6 rounded-2xl border border-beige-200/80 shadow-sm">
-      <h3 className="text-lg font-semibold text-brown-800 border-b border-beige-200 pb-3">
+    <div className="space-y-6 bg-beige-100 dark:bg-gray-800 p-6 rounded-2xl border border-beige-200/80 dark:border-gray-700 shadow-sm">
+      <h3 className="text-lg font-semibold text-brown-800 dark:text-gray-200 border-b border-beige-200 dark:border-gray-700 pb-3">
         Transcription Settings
       </h3>
       <div className="space-y-3">
-         <label className="block text-sm font-medium text-brown-800" title="Select the primary language spoken in the audio for the most accurate transcription.">
+         <label className="block text-sm font-medium text-brown-800 dark:text-gray-200" title="Select the primary language spoken in the audio for the most accurate transcription.">
           Audio Language
         </label>
         <div className="flex items-center space-x-2 overflow-x-auto pb-2 -mx-1 px-1">
@@ -154,7 +154,7 @@ const Settings: React.FC<SettingsProps> = ({
                     className={`px-3 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap transition-colors duration-200
                         ${language === lang.value 
                             ? 'bg-khaki-600 text-white shadow-sm' 
-                            : 'bg-beige-200 text-brown-700 hover:bg-beige-300'
+                            : 'bg-beige-200 dark:bg-gray-700 text-brown-700 dark:text-gray-300 hover:bg-beige-300 dark:hover:bg-gray-600'
                         }`
                     }
                 >
@@ -164,7 +164,7 @@ const Settings: React.FC<SettingsProps> = ({
         </div>
       </div>
       
-      <div className="space-y-4 pt-4 border-t border-beige-200">
+      <div className="space-y-4 pt-4 border-t border-beige-200 dark:border-gray-700">
         <SettingsToggle
             id="diarization-toggle"
             label="Speaker Diarization"
@@ -183,7 +183,7 @@ const Settings: React.FC<SettingsProps> = ({
         />
 
         {enableSummary && (
-            <div className="space-y-4 pt-4 ml-4 pl-4 border-l border-beige-200">
+            <div className="space-y-4 pt-4 ml-4 pl-4 border-l border-beige-200 dark:border-gray-700">
                 <ChipSelector label="Length" options={SUMMARY_OPTIONS.length} selectedValue={summaryLength} onSelect={onSummaryLengthChange} />
                 <ChipSelector label="Detail Level" options={SUMMARY_OPTIONS.detail} selectedValue={summaryDetail} onSelect={onSummaryDetailChange} />
                 <ChipSelector label="Structure" options={SUMMARY_OPTIONS.structure} selectedValue={summaryStructure} onSelect={onSummaryStructureChange} />
