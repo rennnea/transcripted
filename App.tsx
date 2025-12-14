@@ -195,7 +195,7 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     const mainContentContainer = (children: React.ReactNode) => (
-      <div className="w-full max-w-4xl mx-auto bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6 md:p-10">
+      <div className="w-full max-w-4xl mx-auto bg-beige-100 dark:bg-gray-800 border border-beige-200/80 dark:border-gray-700 rounded-2xl shadow-sm p-6 md:p-10">
         {children}
       </div>
     );
@@ -249,13 +249,13 @@ const App: React.FC = () => {
         }
         return (
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 w-full max-w-7xl mx-auto">
-            <div className="lg:col-span-3 flex flex-col justify-center bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-8">
+            <div className="lg:col-span-3 flex flex-col justify-center bg-beige-100 dark:bg-gray-800 border border-beige-200/80 dark:border-gray-700 rounded-2xl shadow-sm p-8">
               <FileInfo file={audioFile} />
                <div className="flex flex-col sm:flex-row justify-start mt-8 space-y-3 sm:space-y-0 sm:space-x-4">
                   <button onClick={handleTranscribe} disabled={isLoading} className="w-full sm:w-auto px-8 py-3 bg-khaki-600 text-white font-bold rounded-xl hover:bg-khaki-700 focus:outline-none focus:ring-4 focus:ring-khaki-300 transition-all duration-300 transform hover:scale-105 disabled:bg-brown-500 disabled:cursor-not-allowed disabled:scale-100">
                     Transcribe Audio
                   </button>
-                  <button onClick={handleClear} className="w-full sm:w-auto px-8 py-3 bg-beige-200 text-brown-700 font-bold rounded-xl hover:bg-beige-300 focus:outline-none focus:ring-4 focus:ring-beige-200 transition-all duration-300">
+                  <button onClick={handleClear} className="w-full sm:w-auto px-8 py-3 bg-beige-200 dark:bg-gray-700 text-brown-700 dark:text-gray-200 font-bold rounded-xl hover:bg-beige-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-beige-200 dark:focus:ring-gray-600 transition-all duration-300">
                     Change File
                   </button>
                 </div>
@@ -281,7 +281,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen bg-beige-50 text-brown-800 font-sans">
+    <div className="flex h-screen bg-beige-50 dark:bg-gray-900 text-brown-800 dark:text-gray-200 font-sans">
       <Sidebar 
         isOpen={isSidebarOpen} 
         estimatedTokens={estimatedTokens}

@@ -15,10 +15,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center min-h-[70vh]">
         <div className="text-left">
-          <h2 className="text-4xl lg:text-5xl font-bold text-brown-800 mb-6 tracking-tight font-poppins">
+          <h2 className="text-4xl lg:text-5xl font-bold text-brown-800 dark:text-gray-100 mb-6 tracking-tight font-poppins">
             AI-Powered Audio Transcription
           </h2>
-          <p className="max-w-xl text-brown-700 mb-10 text-lg">
+          <p className="max-w-xl text-brown-700 dark:text-gray-300 mb-10 text-lg">
             Effortlessly convert your audio files into accurate, speaker-separated text. Our AI can also generate concise summaries and extract key insights for you.
           </p>
           <div className="flex justify-start">
@@ -36,38 +36,38 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
       </div>
 
       <div className="my-24 text-left">
-        <h3 className="text-3xl font-bold text-brown-800 mb-10 font-poppins">How It Works in 3 Easy Steps</h3>
+        <h3 className="text-3xl font-bold text-brown-800 dark:text-gray-100 mb-10 font-poppins">How It Works in 3 Easy Steps</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-beige-100 p-6 rounded-2xl border border-beige-200/80 shadow-sm">
+            <div className="bg-beige-100 dark:bg-gray-800 p-6 rounded-2xl border border-beige-200/80 dark:border-gray-700 shadow-sm">
               <div className="flex items-center space-x-3 mb-3">
-                <div className="bg-khaki-100 p-2 rounded-lg">
-                    <Step1Icon className="w-6 h-6 text-khaki-600" />
+                <div className="bg-khaki-100 dark:bg-khaki-600/30 p-2 rounded-lg">
+                    <Step1Icon className="w-6 h-6 text-khaki-600 dark:text-khaki-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-brown-800">Step 1: Upload</h3>
+                <h3 className="text-lg font-semibold text-brown-800 dark:text-gray-100">Step 1: Upload</h3>
               </div>
-              <p className="text-sm text-brown-700">
+              <p className="text-sm text-brown-700 dark:text-gray-300">
                 Click "Get Started" and upload your audio file. We support a wide range of formats like MP3, WAV, and M4A.
               </p>
             </div>
-            <div className="bg-beige-100 p-6 rounded-2xl border border-beige-200/80 shadow-sm">
+            <div className="bg-beige-100 dark:bg-gray-800 p-6 rounded-2xl border border-beige-200/80 dark:border-gray-700 shadow-sm">
                 <div className="flex items-center space-x-3 mb-3">
-                    <div className="bg-khaki-100 p-2 rounded-lg">
-                        <Step2Icon className="w-6 h-6 text-khaki-600" />
+                    <div className="bg-khaki-100 dark:bg-khaki-600/30 p-2 rounded-lg">
+                        <Step2Icon className="w-6 h-6 text-khaki-600 dark:text-khaki-400" />
                     </div>
-                    <h3 className="text-lg font-semibold text-brown-800">Step 2: Configure</h3>
+                    <h3 className="text-lg font-semibold text-brown-800 dark:text-gray-100">Step 2: Configure</h3>
                 </div>
-                <p className="text-sm text-brown-700">
+                <p className="text-sm text-brown-700 dark:text-gray-300">
                     Select the audio language and choose to enable speaker identification or an AI-generated summary.
                 </p>
             </div>
-            <div className="bg-beige-100 p-6 rounded-2xl border border-beige-200/80 shadow-sm">
+            <div className="bg-beige-100 dark:bg-gray-800 p-6 rounded-2xl border border-beige-200/80 dark:border-gray-700 shadow-sm">
                 <div className="flex items-center space-x-3 mb-3">
-                    <div className="bg-khaki-100 p-2 rounded-lg">
-                        <Step3Icon className="w-6 h-6 text-khaki-600" />
+                    <div className="bg-khaki-100 dark:bg-khaki-600/30 p-2 rounded-lg">
+                        <Step3Icon className="w-6 h-6 text-khaki-600 dark:text-khaki-400" />
                     </div>
-                    <h3 className="text-lg font-semibold text-brown-800">Step 3: Transcribe</h3>
+                    <h3 className="text-lg font-semibold text-brown-800 dark:text-gray-100">Step 3: Transcribe</h3>
                 </div>
-                <p className="text-sm text-brown-700">
+                <p className="text-sm text-brown-700 dark:text-gray-300">
                     Hit transcribe and let our AI do the work. You'll get an accurate, readable transcription in moments.
                 </p>
             </div>
