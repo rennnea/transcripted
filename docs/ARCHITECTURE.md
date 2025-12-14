@@ -242,10 +242,16 @@ sequenceDiagram
 
 ## Security Considerations
 
-### API Key Management
+### ⚠️ API Key Management (CRITICAL)
 - **Storage**: Environment variables (.env.local)
 - **Build-time Injection**: Vite configuration defines process.env variables
-- **Client Protection**: API key exposed in client (note: consider backend proxy for production)
+- **⚠️ SECURITY RISK**: **API key is currently exposed in the client-side bundle**, making it accessible to anyone who inspects the browser's network traffic or JavaScript code
+- **Production Requirement**: **MUST implement a backend proxy server** before production deployment to:
+  - Keep API keys secure on the server-side
+  - Prevent unauthorized usage and potential API quota abuse
+  - Add rate limiting and request validation
+  - Protect against API key theft
+- **Current Status**: Acceptable for development/demo purposes only
 
 ### File Handling
 - **Validation**: File type and size validation before processing
