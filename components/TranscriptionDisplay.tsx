@@ -26,42 +26,45 @@ interface TranscriptionDisplayProps {
 }
 
 const ENTITY_COLORS: { [key: string]: string } = {
-    'People': 'bg-khaki-100 text-brown-800',
-    'Organizations': 'bg-amber-100 text-brown-800',
-    'Locations': 'bg-lime-100 text-brown-800',
-    'Other': 'bg-sky-100 text-brown-800',
-    'Default': 'bg-beige-200 text-brown-800',
+    'People': 'bg-khaki-100 text-brown-800 border-khaki-200',
+    'Organizations': 'bg-amber-100 text-brown-800 border-amber-200',
+    'Locations': 'bg-lime-100 text-brown-800 border-lime-200',
+    'Other': 'bg-sky-100 text-brown-800 border-sky-200',
+    'Default': 'bg-beige-200 text-brown-800 border-beige-300',
 };
 
 const SentimentDisplay: React.FC<{ sentiment: string }> = ({ sentiment }) => {
     if (!sentiment) return null;
     const sentimentLower = sentiment.toLowerCase();
-    let bgColor = 'bg-beige-200';
+    let bgColor = 'bg-beige-100';
     let textColor = 'text-brown-800';
+    let borderColor = 'border-beige-200';
     
     if (sentimentLower.includes('positive')) {
-        bgColor = 'bg-green-100';
+        bgColor = 'bg-green-50';
         textColor = 'text-green-800';
+        borderColor = 'border-green-200';
     } else if (sentimentLower.includes('negative')) {
-        bgColor = 'bg-red-100';
+        bgColor = 'bg-red-50';
         textColor = 'text-red-800';
+        borderColor = 'border-red-200';
     } else if (sentimentLower.includes('neutral') || sentimentLower.includes('mixed')) {
-        bgColor = 'bg-yellow-100';
+        bgColor = 'bg-yellow-50';
         textColor = 'text-yellow-800';
+        borderColor = 'border-yellow-200';
     }
 
     return (
-        <div className={`p-4 rounded-xl flex items-center space-x-3 ${bgColor}`}>
+        <div className={`p-4 rounded-xl flex items-center space-x-3 ${bgColor} border ${borderColor} animate-fade-in`}>
             <SentimentIcon className={`w-6 h-6 ${textColor}`} />
             <div>
-                <h4 className="font-semibold text-sm text-gray-500">Overall Sentiment</h4>
+                <h4 className="font-semibold text-xs text-brown-500 uppercase tracking-wide">Overall Sentiment</h4>
                 <p className={`font-bold text-lg ${textColor}`}>{sentiment}</p>
             </div>
         </div>
     );
 };
 
-// Helper to format the structured data into a downloadable text file content
 const formatResultForDownload = (result: TranscriptionResult): string => {
   let content = '';
 
@@ -184,11 +187,13 @@ const TranscriptionDisplay: React.FC<TranscriptionDisplayProps> = ({
 
   if (error) {
     return (
-      <div className="text-center bg-beige-100 border border-red-300/50 rounded-2xl p-8 shadow-sm">
-        <ErrorIcon className="w-12 h-12 text-red-500 mx-auto mb-4" />
-        <p className="text-red-700 font-semibold text-lg">An error occurred</p>
-        <p className="text-brown-700 mt-2">{error}</p>
-        <button onClick={onClear} className="mt-6 px-6 py-2 bg-khaki-600 text-white font-bold rounded-lg hover:bg-khaki-700 focus:outline-none focus:ring-2 focus:ring-khaki-500">
+      <div className="text-center bg-white border border-red-200 rounded-3xl p-10 shadow-sm animate-fade-in-up">
+        <div className="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <ErrorIcon className="w-10 h-10 text-red-500" />
+        </div>
+        <p className="text-red-700 font-bold text-xl mb-2">Transcription Failed</p>
+        <p className="text-brown-600 mb-8">{error}</p>
+        <button onClick={onClear} className="px-8 py-3 bg-khaki-600 text-white font-bold rounded-xl hover:bg-khaki-700 focus:outline-none focus:ring-4 focus:ring-khaki-200 transition-all">
           Try Again
         </button>
       </div>
@@ -197,86 +202,64 @@ const TranscriptionDisplay: React.FC<TranscriptionDisplayProps> = ({
 
   if (transcription) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-8 animate-fade-in">
         <div className="relative">
-            <div className="w-full max-h-[70vh] space-y-6 text-brown-800 overflow-y-auto pr-4">
-               <SentimentDisplay sentiment={transcription.sentiment?.overall} />
-
-                {transcription.sentiment?.trend && transcription.sentiment.trend.length > 0 && (
-                  <div className="bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6">
-                    <h3 className="flex items-center space-x-2 font-semibold text-brown-800 text-lg mb-4">
-                      <SentimentTrendIcon className="w-6 h-6 text-khaki-500"/>
-                      <span>Sentiment Trend</span>
-                    </h3>
-                    <SentimentTrendChart data={transcription.sentiment.trend} />
-                  </div>
-                )}
-                
-                {transcription.summary && (
-                  <div className="bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6">
-                    <h3 className="flex items-center space-x-2 font-semibold text-brown-800 text-lg mb-4">
-                      <SummaryIcon className="w-6 h-6 text-khaki-500"/>
-                      <span>Summary</span>
-                    </h3>
-                    <div className="prose prose-sm max-w-none text-brown-700 whitespace-pre-wrap">{renderClickableLinks(transcription.summary)}</div>
-                  </div>
-                )}
-
-                {transcription.sources && transcription.sources.length > 0 && (
-                  <div className="bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6">
-                    <h3 className="flex items-center space-x-2 font-semibold text-brown-800 text-lg mb-2">
-                      <LinkIcon className="w-6 h-6 text-khaki-500"/>
-                      <span>Sources</span>
-                    </h3>
-                    <p className="text-xs text-brown-500 mb-4">The following web pages were consulted by the AI to provide a factually grounded summary.</p>
-                    <ul className="list-disc list-inside space-y-2">
-                      {transcription.sources.map((source: any, index: number) => (
-                        <li key={index} className="text-sm">
-                          <a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="text-khaki-600 hover:underline">
-                            {source.web.title || source.web.uri}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {transcription.entities && Object.keys(transcription.entities).length > 0 && (
-                    <div className="bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6">
-                        <h3 className="flex items-center space-x-2 font-semibold text-brown-800 text-lg mb-4">
-                          <EntitiesIcon className="w-6 h-6 text-khaki-500"/>
-                          <span>Extracted Entities</span>
-                        </h3>
-                        <div className="space-y-4">
-                          {Object.entries(transcription.entities).map(([category, items]) => (
-                            <div key={category}>
-                                <h4 className="text-sm font-semibold text-brown-700 mb-2">{category}</h4>
-                                <div className="flex flex-wrap gap-2">
-                                  {items.map((item, i) => (
-                                    <span key={i} className={`px-2.5 py-1 text-sm font-medium rounded-full border border-black/5 shadow-sm ${ENTITY_COLORS[category] || ENTITY_COLORS.Default}`}>
-                                        {item}
-                                    </span>
-                                  ))}
-                                </div>
-                            </div>
-                          ))}
+            <div className="w-full max-h-[75vh] space-y-8 text-brown-800 overflow-y-auto pr-2 custom-scrollbar">
+               
+               {/* Analysis Section Grid */}
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <SentimentDisplay sentiment={transcription.sentiment?.overall} />
+                  
+                  {transcription.entities && Object.keys(transcription.entities).length > 0 && (
+                      <div className="bg-white/50 border border-white/60 rounded-xl p-4 shadow-sm animate-fade-in">
+                        <div className="flex items-center space-x-2 mb-3">
+                           <EntitiesIcon className="w-4 h-4 text-khaki-600" />
+                           <h4 className="font-semibold text-xs text-brown-500 uppercase tracking-wide">Key Entities</h4>
                         </div>
+                        <div className="flex flex-wrap gap-2 max-h-20 overflow-y-auto custom-scrollbar">
+                           {Object.values(transcription.entities).flat().slice(0, 8).map((item, i) => (
+                             <span key={i} className="px-2 py-0.5 text-xs font-medium rounded-full bg-beige-100 text-brown-700 border border-beige-200">
+                                {item}
+                             </span>
+                           ))}
+                           {Object.values(transcription.entities).flat().length > 8 && (
+                               <span className="text-xs text-brown-400 py-0.5">+ more</span>
+                           )}
+                        </div>
+                      </div>
+                  )}
+               </div>
+
+                {transcription.summary && (
+                  <div className="bg-white/50 border border-white/60 rounded-2xl shadow-sm p-8 animate-fade-in transition-all">
+                    <h3 className="flex items-center space-x-2 font-bold text-brown-800 text-xl mb-4">
+                      <SummaryIcon className="w-6 h-6 text-khaki-600"/>
+                      <span>Executive Summary</span>
+                    </h3>
+                    <div className="prose prose-brown prose-p:text-brown-700 prose-a:text-khaki-700 max-w-none whitespace-pre-wrap leading-relaxed">
+                        {renderClickableLinks(transcription.summary)}
                     </div>
+                  </div>
                 )}
 
-                <div className="bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6">
+                <div className="bg-white/80 border border-white/60 rounded-2xl shadow-sm p-8 backdrop-blur-sm">
+                     <div className="flex items-center justify-between mb-6">
+                        <h3 className="font-bold text-xl text-brown-800">Transcript</h3>
+                        {isEditing && <span className="text-xs font-bold text-khaki-600 uppercase tracking-widest px-2 py-1 bg-khaki-50 rounded-md">Editing Mode</span>}
+                     </div>
+                     
                      {isEditing ? (
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                           {editedTranscription.map((segment, index) => (
-                            <div key={index} className="grid grid-cols-[auto_1fr] items-start gap-x-3 gap-y-1">
-                                <div className="flex items-center col-start-1 row-start-1">
-                                  <span className="font-mono text-xs text-brown-500 pt-2.5">{segment.timestamp}</span>
-                                  <span className="font-bold text-khaki-600 ml-3 pt-2.5">{segment.speaker}:</span>
+                            <div key={index} className="group relative pl-4 border-l-2 border-beige-200 hover:border-khaki-400 transition-colors">
+                                <div className="flex items-baseline space-x-3 mb-1.5">
+                                  <span className="font-mono text-xs text-brown-400 select-none">{segment.timestamp}</span>
+                                  <span className="font-bold text-khaki-700 text-sm uppercase tracking-wide">{segment.speaker}</span>
                                 </div>
                                 <textarea
                                   value={segment.text}
                                   onChange={(e) => handleSegmentChange(index, e.target.value)}
-                                  className="col-start-1 sm:col-start-2 row-start-2 sm:row-start-1 w-full p-2 bg-beige-50 border border-beige-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-khaki-500"
+                                  className="w-full p-3 bg-white border border-beige-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-khaki-500/20 focus:border-khaki-500 transition-all text-brown-800 leading-relaxed"
                                   rows={Math.max(1, segment.text.split('\n').length)}
                                 />
                             </div>
@@ -284,30 +267,32 @@ const TranscriptionDisplay: React.FC<TranscriptionDisplayProps> = ({
                         </div>
                      ) : (
                         transcription.transcription.map((segment, index) => (
-                          <div key={index} className="flex items-start gap-3 mb-3">
-                            <span className="font-mono text-xs text-brown-500 pt-1">{segment.timestamp}</span>
+                          <div key={index} className="group flex items-start gap-4 mb-5 hover:bg-beige-50/50 p-2 rounded-lg -mx-2 transition-colors">
+                            <span className="font-mono text-xs text-brown-400 pt-1.5 min-w-[50px] select-none">{segment.timestamp}</span>
                             <div className="flex-1">
-                              <p>
-                                <span className="font-bold text-khaki-600 mr-2">{segment.speaker}:</span>
-                                <span className="text-brown-700 whitespace-pre-wrap">{segment.text}</span>
+                              <p className="mb-1">
+                                <span className="font-bold text-brown-900 text-sm uppercase tracking-wide mr-2">{segment.speaker}</span>
                               </p>
+                              <p className="text-brown-700 leading-relaxed whitespace-pre-wrap">{segment.text}</p>
                             </div>
                           </div>
                         ))
                      )}
                 </div>
             </div>
-            <div className="absolute top-4 right-4 flex space-x-1 bg-beige-100/50 backdrop-blur-sm rounded-lg p-1">
+
+            {/* Floating Action Bar */}
+            <div className="absolute top-4 right-6 flex space-x-2 bg-white/80 backdrop-blur-md border border-white/40 shadow-lg rounded-xl p-1.5 z-10 transition-opacity duration-300">
               {!isEditing && (
                 <>
-                  <button onClick={handleDownload} className="p-2 text-brown-500 rounded-md hover:bg-beige-200 hover:text-brown-800 focus:outline-none focus:ring-2 focus:ring-khaki-500" title="Download transcription">
+                  <button onClick={handleDownload} className="p-2 text-brown-600 rounded-lg hover:bg-khaki-50 hover:text-khaki-700 transition-colors" title="Download">
                     <DownloadIcon className="w-5 h-5" />
                   </button>
-                  <button onClick={handleEdit} className="p-2 text-brown-500 rounded-md hover:bg-beige-200 hover:text-brown-800 focus:outline-none focus:ring-2 focus:ring-khaki-500" title="Edit transcription">
+                  <button onClick={handleEdit} className="p-2 text-brown-600 rounded-lg hover:bg-khaki-50 hover:text-khaki-700 transition-colors" title="Edit">
                     <EditIcon className="w-5 h-5" />
                   </button>
-                  <button onClick={handleCopy} className="p-2 text-brown-500 rounded-md hover:bg-beige-200 hover:text-brown-800 focus:outline-none focus:ring-2 focus:ring-khaki-500" title={copied ? "Copied!" : "Copy to clipboard"}>
-                    {copied ? <CheckIcon className="w-5 h-5 text-green-500" /> : <CopyIcon className="w-5 h-5" />}
+                  <button onClick={handleCopy} className="p-2 text-brown-600 rounded-lg hover:bg-khaki-50 hover:text-khaki-700 transition-colors" title={copied ? "Copied" : "Copy"}>
+                    {copied ? <CheckIcon className="w-5 h-5 text-green-600" /> : <CopyIcon className="w-5 h-5" />}
                   </button>
                 </>
               )}
@@ -315,24 +300,31 @@ const TranscriptionDisplay: React.FC<TranscriptionDisplayProps> = ({
         </div>
 
         {isEditing && (
-            <div className="flex justify-end space-x-3 pt-4 border-t border-beige-200">
-              <button onClick={handleCancel} className="px-4 py-2 bg-beige-200 text-brown-800 font-semibold rounded-lg hover:bg-beige-300">
+            <div className="flex justify-end space-x-3 pt-6 border-t border-beige-200 sticky bottom-0 bg-white/90 backdrop-blur p-4 rounded-b-2xl z-20">
+              <button onClick={handleCancel} className="px-5 py-2.5 bg-beige-100 text-brown-800 font-semibold rounded-xl hover:bg-beige-200 transition-colors">
                 Cancel
               </button>
-              <button onClick={handleSave} className="px-4 py-2 bg-khaki-600 text-white font-semibold rounded-lg hover:bg-khaki-700 flex items-center space-x-2">
+              <button onClick={handleSave} className="px-5 py-2.5 bg-khaki-600 text-white font-semibold rounded-xl hover:bg-khaki-700 shadow-md flex items-center space-x-2 transition-all">
                 <SaveIcon className="w-5 h-5" />
                 <span>Save Changes</span>
               </button>
             </div>
         )}
-        <button onClick={onClear} className="w-full px-6 py-3 bg-khaki-600 text-white font-bold rounded-xl hover:bg-khaki-700 focus:outline-none focus:ring-4 focus:ring-khaki-300/50 transition-all">
-          Transcribe Another File
-        </button>
+        
+        {!isEditing && (
+             <div className="flex justify-center pt-2 pb-6">
+                <button onClick={onClear} className="text-sm font-semibold text-brown-500 hover:text-khaki-700 transition-colors flex items-center space-x-2">
+                    <span>← Upload Another File</span>
+                </button>
+             </div>
+        )}
 
-        <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 bg-brown-800 text-white px-4 py-2 rounded-lg shadow-lg transition-all duration-300 ease-in-out ${copied ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
-            <div className="flex items-center space-x-2">
-                <CheckIcon className="w-5 h-5 text-green-400" />
-                <span>Copied to clipboard!</span>
+        <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 bg-brown-900/90 backdrop-blur text-white px-5 py-3 rounded-full shadow-2xl transition-all duration-300 ease-in-out ${copied ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95 pointer-events-none'}`}>
+            <div className="flex items-center space-x-2.5">
+                <div className="bg-green-500 rounded-full p-0.5">
+                    <CheckIcon className="w-3.5 h-3.5 text-white" />
+                </div>
+                <span className="font-medium">Copied to clipboard</span>
             </div>
         </div>
       </div>

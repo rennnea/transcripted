@@ -91,7 +91,8 @@ export const runCacheTests = async (): Promise<TestSuiteResult> => {
     assertEqual(allItems.length, 2, 'cacheService: getAllItems returns all items with "transcription_" prefix', results);
     
     // Check if one of the returned items matches our test data
-    const foundItem = allItems.find(item => item.key === testKey1);
+    // Fix: Access item.cacheKey instead of item.key
+    const foundItem = allItems.find(item => item.cacheKey === testKey1);
     assertEqual(foundItem ? foundItem.fileInfo.name : '', testData1.fileInfo.name, 'cacheService: getAllItems returns correct data', results);
 
     cacheService.clearAll();

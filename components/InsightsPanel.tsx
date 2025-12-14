@@ -9,61 +9,99 @@ import { calculateSpeakerDistribution, calculateSentimentTrend } from '../utils/
 import { SentimentTrendChart } from './charts/SentimentTrendChart';
 import { SentimentTrendIcon } from './icons/SentimentTrendIcon';
 
+interface InsightsPanelProps {
+    transcription: TranscriptionResult | null;
+    isLoading?: boolean;
+}
 
-const InsightsPanel: React.FC<{ transcription: TranscriptionResult | null; }> = ({ transcription }) => {
+const SkeletonLoader: React.FC<{ type: 'chart' | 'list' }> = ({ type }) => {
+    return (
+        <div className="animate-pulse space-y-3">
+            {type === 'chart' ? (
+                <>
+                    <div className="h-32 bg-brown-100/50 rounded-lg w-full"></div>
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="h-4 bg-brown-100/50 rounded w-full"></div>
+                        <div className="h-4 bg-brown-100/50 rounded w-full"></div>
+                    </div>
+                </>
+            ) : (
+                <>
+                    <div className="h-4 bg-brown-100/50 rounded w-3/4"></div>
+                    <div className="h-4 bg-brown-100/50 rounded w-1/2"></div>
+                    <div className="h-4 bg-brown-100/50 rounded w-5/6"></div>
+                </>
+            )}
+        </div>
+    );
+};
+
+const InsightsPanel: React.FC<InsightsPanelProps> = ({ transcription, isLoading = false }) => {
 
   const speakerData = useMemo(() => calculateSpeakerDistribution(transcription?.transcription ?? null), [transcription]);
   const sentimentTrendData = useMemo(() => calculateSentimentTrend(transcription?.sentiment?.trend ?? null), [transcription]);
   const groundingSources = useMemo(() => transcription?.sources?.slice(0, 5) ?? [], [transcription]);
 
+  const hasInsights = speakerData.length > 0 || sentimentTrendData.length > 0 || groundingSources.length > 0;
+
   return (
-    <aside className="fixed top-0 right-0 h-full w-[350px] bg-beige-100/70 backdrop-blur-xl border-l border-beige-200/80 p-6 overflow-y-auto transition-transform duration-300 transform translate-x-0 hidden lg:block">
+    <aside className="fixed top-0 right-0 h-full w-[380px] bg-white/70 backdrop-blur-2xl border-l border-white/20 p-8 overflow-y-auto transition-transform duration-500 transform translate-x-0 hidden lg:block shadow-[-10px_0_40px_rgba(0,0,0,0.02)]">
       <div className="space-y-8">
         <h2 className="text-xl font-bold text-brown-800 flex items-center space-x-2">
             <AnalyticsIcon className="w-6 h-6 text-khaki-600"/>
             <span>Transcription Insights</span>
         </h2>
 
-        <div className="bg-beige-100/80 p-4 rounded-xl border border-beige-200/80 shadow-sm">
-            <h3 className="font-semibold text-brown-800 flex items-center space-x-2 mb-3">
+        {/* Speaker Distribution */}
+        <div className="bg-white/50 p-5 rounded-2xl border border-white/40 shadow-sm transition-all duration-300 hover:shadow-md">
+            <h3 className="font-semibold text-brown-800 flex items-center space-x-2 mb-4">
                 <SpeakerIcon className="w-5 h-5 text-brown-500"/>
                 <span>Speaker Distribution</span>
             </h3>
-            <SpeakerDistributionChart data={speakerData} />
+            {isLoading ? <SkeletonLoader type="chart" /> : <SpeakerDistributionChart data={speakerData} />}
         </div>
 
-        <div className="bg-beige-100/80 p-4 rounded-xl border border-beige-200/80 shadow-sm">
-            <h3 className="font-semibold text-brown-800 flex items-center space-x-2 mb-3">
+        {/* Sentiment Trend */}
+        <div className="bg-white/50 p-5 rounded-2xl border border-white/40 shadow-sm transition-all duration-300 hover:shadow-md">
+            <h3 className="font-semibold text-brown-800 flex items-center space-x-2 mb-4">
                 <SentimentTrendIcon className="w-5 h-5 text-brown-500"/>
                 <span>Sentiment Trend</span>
             </h3>
-            <SentimentTrendChart data={sentimentTrendData} />
+            {isLoading ? <SkeletonLoader type="chart" /> : <SentimentTrendChart data={sentimentTrendData} />}
         </div>
 
-        {groundingSources.length > 0 && (
-          <div className="bg-beige-100/80 p-4 rounded-xl border border-beige-200/80 shadow-sm">
-            <h3 className="font-semibold text-brown-800 flex items-center space-x-2 mb-3">
+        {/* Sources */}
+        {(groundingSources.length > 0 || isLoading) && (
+          <div className="bg-white/50 p-5 rounded-2xl border border-white/40 shadow-sm transition-all duration-300 hover:shadow-md">
+            <h3 className="font-semibold text-brown-800 flex items-center space-x-2 mb-4">
                 <LinkIcon className="w-5 h-5 text-brown-500"/>
                 <span>Grounding Sources</span>
             </h3>
-            <p className="text-xs text-brown-500 mb-3">
-              To provide an accurate and up-to-date summary, the AI consulted the following sources:
-            </p>
-            <ul className="space-y-2.5">
-              {groundingSources.map((source: any, index: number) => (
-                <li key={index} className="text-sm leading-tight">
-                  <a 
-                    href={source.web.uri} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="text-khaki-700 hover:underline break-words"
-                    title={source.web.uri}
-                  >
-                    {source.web.title || 'Untitled Source'}
-                  </a>
-                </li>
-              ))}
-            </ul>
+            {isLoading ? (
+                <SkeletonLoader type="list" />
+            ) : groundingSources.length > 0 ? (
+                <>
+                    <p className="text-xs text-brown-500 mb-3">
+                    Consulted sources for factual verification:
+                    </p>
+                    <ul className="space-y-3">
+                    {groundingSources.map((source: any, index: number) => (
+                        <li key={index} className="text-sm leading-tight group">
+                        <a 
+                            href={source.web.uri} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-brown-600 group-hover:text-khaki-700 transition-colors flex flex-col"
+                            title={source.web.uri}
+                        >
+                            <span className="font-medium group-hover:underline">{source.web.title || 'Untitled Source'}</span>
+                            <span className="text-[10px] text-brown-400 mt-0.5 truncate">{source.web.uri}</span>
+                        </a>
+                        </li>
+                    ))}
+                    </ul>
+                </>
+            ) : null}
           </div>
         )}
       </div>

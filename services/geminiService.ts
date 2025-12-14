@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, GenerateContentParameters, Type } from "@google/genai";
-import { TranscriptionResult, TranscriptionOptions } from "../types";
+import { TranscriptionResult, TranscriptionOptions, RawTranscriptionData, AnalysisData } from "../types";
 
 const API_KEY = process.env.API_KEY;
 
@@ -10,180 +10,232 @@ if (!API_KEY) {
 
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
-const responseSchema = {
+// --- SCHEMAS ---
+
+// Schema for Stage 1: Strict Transcription (Data Extraction)
+const transcriptionSchema = {
   type: Type.OBJECT,
   properties: {
     transcription: {
       type: Type.ARRAY,
-      description: "An array of transcribed audio segments.",
+      description: "An array of transcribed audio segments with precise timestamps.",
       items: {
         type: Type.OBJECT,
         properties: {
-          timestamp: { type: Type.STRING, description: "The start time of the speech segment in HH:MM:SS format." },
-          speaker: { type: Type.STRING, description: "The identified speaker label (e.g., 'Speaker 1'). If diarization is disabled, this can be a generic label like 'SPEAKER'." },
-          text: { type: Type.STRING, description: "The transcribed text for this segment." },
+          timestamp: { type: Type.STRING, description: "Start time (HH:MM:SS)" },
+          speaker: { type: Type.STRING, description: "Speaker label (e.g., Speaker 1)" },
+          text: { type: Type.STRING, description: "Spoken text" },
         },
         required: ["timestamp", "speaker", "text"],
       },
     },
-    summary: { type: Type.STRING, description: "A summary of the transcription. Should be an empty string if summarization is disabled." },
-    sentiment: {
-      type: Type.OBJECT,
-      description: "Analysis of the emotional tone of the conversation.",
-      properties: {
-        overall: { type: Type.STRING, description: "The overall sentiment (e.g., Positive, Negative, Neutral, Mixed). Empty if disabled." },
-        trend: {
-          type: Type.ARRAY,
-          description: "A chronological trend of sentiment through the conversation. Empty if disabled.",
-          items: {
+  },
+  required: ["transcription"],
+};
+
+// Schema for Stage 2: Analysis (Insights)
+const analysisSchema = {
+    type: Type.OBJECT,
+    properties: {
+        summary: { type: Type.STRING, description: "A structured summary." },
+        sentiment: {
             type: Type.OBJECT,
             properties: {
-              segment: { type: Type.INTEGER, description: "The chronological segment number." },
-              sentiment: { type: Type.STRING, description: "The sentiment for this segment (Positive, Negative, or Neutral)." },
-            },
-            required: ["segment", "sentiment"],
-          },
+                overall: { type: Type.STRING },
+                trend: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            segment: { type: Type.INTEGER },
+                            sentiment: { type: Type.STRING, enum: ["Positive", "Negative", "Neutral"] }
+                        }
+                    }
+                }
+            }
         },
-      },
-      required: ["overall", "trend"],
-    },
-    entities: {
-      type: Type.OBJECT,
-      description: "A dictionary of extracted key entities, categorized by type (e.g., People, Organizations, Locations) and values are arrays of the identified entities. Should be an empty object if entity extraction is disabled.",
-      properties: {
-        People: {
-          type: Type.ARRAY,
-          description: "List of people's names mentioned in the audio.",
-          items: { type: Type.STRING }
-        },
-        Organizations: {
-          type: Type.ARRAY,
-          description: "List of organizations, companies, or institutions mentioned.",
-          items: { type: Type.STRING }
-        },
-        Locations: {
-          type: Type.ARRAY,
-          description: "List of cities, countries, or other locations mentioned.",
-          items: { type: Type.STRING }
-        },
-        Other: {
-            type: Type.ARRAY,
-            description: "List of any other important entities that do not fit the above categories.",
-            items: { type: Type.STRING }
+        entities: {
+            type: Type.OBJECT,
+            properties: {
+                People: { type: Type.ARRAY, items: { type: Type.STRING } },
+                Organizations: { type: Type.ARRAY, items: { type: Type.STRING } },
+                Locations: { type: Type.ARRAY, items: { type: Type.STRING } },
+                Other: { type: Type.ARRAY, items: { type: Type.STRING } },
+            }
         }
-      },
-    },
-  },
-  required: ["transcription", "summary", "sentiment", "entities"],
+    }
 };
 
-const buildSimplePrompt = (options: TranscriptionOptions): string => {
-    const {
-        language,
-        enableDiarization,
-        enableSummary,
-        summaryLength,
-        summaryDetail,
-        summaryStructure,
-        enableEntityExtraction,
-        enableSentimentAnalysis,
-    } = options;
+// --- HELPER FUNCTIONS ---
 
-    let prompt = `Analyze the provided audio file and return a structured JSON object that adheres to the provided schema. The primary language spoken is ${language}.`;
+const cleanJsonResponse = (text: string): string => {
+    return text.replace(/^```(json)?\n?/, '').replace(/\n?```$/, '').trim();
+};
 
-    if (enableDiarization) {
-        prompt += ` Identify and label each speaker (e.g., 'Speaker 1', 'Speaker 2'). Provide timestamps in HH:MM:SS format for each segment.`;
-    } else {
-        prompt += ` Transcribe the audio assuming a single speaker. Provide timestamps in HH:MM:SS format for each segment.`;
+// --- PIPELINE STEPS ---
+
+const uploadAudioFile = async (file: File): Promise<{ uri: string, mimeType: string }> => {
+    console.log("Step A: Uploading file via File API...");
+    try {
+        const uploadResult = await ai.files.upload({
+            file: file,
+            config: { 
+                mimeType: file.type,
+                displayName: file.name,
+            }
+        });
+        console.log(`File uploaded successfully: ${uploadResult.uri}`);
+        return { uri: uploadResult.uri, mimeType: uploadResult.mimeType };
+    } catch (error) {
+        console.error("Upload failed:", error);
+        throw new Error("Failed to upload file to AI service. Please check your network.");
+    }
+};
+
+const transcribeStep = async (fileUri: string, mimeType: string, options: TranscriptionOptions): Promise<RawTranscriptionData> => {
+    console.log("Step B: Performing strict transcription...");
+    
+    const prompt = `Transcribe the audio file accurately. 
+    Language: ${options.language}. 
+    ${options.enableDiarization ? "Identify unique speakers (Speaker 1, Speaker 2)." : "Treat as a single speaker."}
+    timestamps are required in HH:MM:SS format.`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [{ parts: [
+                { fileData: { fileUri, mimeType } }, 
+                { text: prompt }
+            ]}],
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: transcriptionSchema,
+            }
+        });
+
+        const jsonText = cleanJsonResponse(response.text || "{}");
+        return JSON.parse(jsonText) as RawTranscriptionData;
+    } catch (error) {
+        console.error("Transcription step failed:", error);
+        throw new Error("Failed to transcribe audio. The model could not process the file.");
+    }
+};
+
+const analyzeStep = async (transcriptionText: string, options: TranscriptionOptions): Promise<AnalysisData> => {
+    console.log("Step C: Performing analysis...");
+    
+    if (!transcriptionText || transcriptionText.length < 10) {
+        return {
+            summary: "",
+            sentiment: { overall: "Unknown", trend: [] },
+            entities: {},
+            sources: []
+        };
     }
 
-    if (enableSummary) {
-        prompt += ` Include a ${summaryLength.toLowerCase()} ${summaryDetail.toLowerCase()} summary structured as ${summaryStructure.toLowerCase()}.`;
+    let prompt = `Analyze the provided transcript text.\n`;
+    
+    if (options.enableSummary) {
+        prompt += `Generate a ${options.summaryLength} ${options.summaryDetail} summary formatted as ${options.summaryStructure}.\n`;
     }
-
-    if (enableSentimentAnalysis) {
-        prompt += ` Include an overall sentiment analysis and a chronological sentiment trend with 5-10 segments.`;
+    if (options.enableSentimentAnalysis) {
+        prompt += `Perform sentiment analysis (Overall + Trend).\n`;
     }
-
-    if (enableEntityExtraction) {
-        prompt += ` Extract key entities mentioned in the audio. Categorize them into People, Organizations, Locations, and Other, as defined in the schema.`;
+    if (options.enableEntityExtraction) {
+        prompt += `Extract entities (People, Organizations, Locations).\n`;
     }
     
-    return prompt;
-};
+    prompt += `\nTRANSCRIPT:\n${transcriptionText.substring(0, 800000)}`;
 
-export const transcribeAudio = async (
-  audioBase64: string, 
-  mimeType: string,
-  options: TranscriptionOptions
-): Promise<TranscriptionResult | null> => {
-  try {
-    const audioPart = {
-      inlineData: {
-        data: audioBase64,
-        mimeType: mimeType,
-      },
-    };
-
-    const instructionText = buildSimplePrompt(options);
-
-    const request: GenerateContentParameters = {
-      model: "gemini-2.5-flash",
-      contents: [{ parts: [audioPart, { text: instructionText }] }],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: responseSchema,
-      }
-    };
+    const config: any = {};
 
     if (options.enableSearchGrounding) {
-        request.config!.tools = [{googleSearch: {}}];
+        config.tools = [{ googleSearch: {} }];
+        prompt += `\n\nVerify facts in the summary using Google Search. Return the result as a VALID JSON object matching this structure: ${JSON.stringify(analysisSchema)}`;
+    } else {
+        config.responseMimeType = "application/json";
+        config.responseSchema = analysisSchema;
     }
 
-    const response = await ai.models.generateContent(request);
-    
-    const jsonText = response.text;
-    
-    if (jsonText) {
-      try {
-        const parsedJson = JSON.parse(jsonText);
-        // Add grounding sources to the final object, as they are not part of the schema
-        parsedJson.sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
-        return parsedJson as TranscriptionResult;
-      } catch (e) {
-        console.error("Failed to parse JSON response from API:", e);
-        console.error("Raw response text:", jsonText);
-        throw new Error("The AI returned an invalid response format. Please try again.");
-      }
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-3-pro-preview", 
+            contents: [{ parts: [{ text: prompt }] }],
+            config: config
+        });
+
+        const result = JSON.parse(cleanJsonResponse(response.text || "{}"));
+        
+        if (options.enableSearchGrounding && response.candidates?.[0]?.groundingMetadata) {
+            result.sources = response.candidates[0].groundingMetadata.groundingChunks;
+        }
+
+        return result as AnalysisData;
+
+    } catch (error) {
+        console.warn("Analysis step encountered an issue:", error);
+        return {
+            summary: "Analysis failed to generate.",
+            sentiment: { overall: "Unknown", trend: [] },
+            entities: {},
+            sources: []
+        };
     }
-    
-    return null;
+};
 
-  } catch (error) {
-    console.error("Error calling Gemini API:", error);
+const cacheStep = async (transcriptionText: string, fileName: string): Promise<{ name: string, ttl: number } | undefined> => {
+    if (transcriptionText.length < 500) return undefined;
 
-    let userFriendlyMessage = "An unknown error occurred during transcription.";
-
-    if (error instanceof Error) {
-      const errorMessage = error.message.toLowerCase();
-      
-      if (errorMessage.includes('api key not valid') || errorMessage.includes('api_key_invalid')) {
-        userFriendlyMessage = "Your API key is invalid or missing. Please check your configuration and try again.";
-      } else if (errorMessage.includes('400')) { // Bad Request
-        userFriendlyMessage = "The request was invalid. This may be due to an unsupported audio format or a corrupted file. Please try a different audio file.";
-      } else if (errorMessage.includes('500') || errorMessage.includes('503')) { // Server Error
-        userFriendlyMessage = "The AI service is currently unavailable or experiencing issues. Please try again later.";
-      } else if (errorMessage.includes('deadline_exceeded')) {
-        userFriendlyMessage = "The request timed out. This can happen with very large files. Please try a smaller file or check your network connection.";
-      } else if (errorMessage.includes('resource_exhausted')) {
-         userFriendlyMessage = "You have exceeded your API quota. Please check your usage limits and billing information in your Google Cloud console.";
-      } else if (errorMessage.includes('safety')) {
-         userFriendlyMessage = "The request was blocked due to safety settings. The audio content may have violated the safety policy.";
-      } else {
-        userFriendlyMessage = `An unexpected error occurred: ${error.message}`;
-      }
+    console.log("Step D: Creating context cache...");
+    try {
+        const ttlSeconds = 1200;
+        const cacheResult = await ai.caches.create({
+            model: 'gemini-2.5-flash',
+            config: {
+                systemInstruction: "You are a helpful AI assistant. Answer questions based ONLY on the provided transcript context.",
+            },
+            contents: [{
+                role: 'user',
+                parts: [{ text: transcriptionText }]
+            }],
+            ttlSeconds: ttlSeconds
+        });
+        
+        console.log(`Cache created: ${cacheResult.name}`);
+        return { name: cacheResult.name, ttl: ttlSeconds };
+    } catch (error) {
+        console.warn("Context caching failed:", error);
+        return undefined;
     }
+};
+
+// --- MAIN ORCHESTRATOR ---
+
+// Return type updated to include promises for background tasks
+export const processAudioPipeline = async (
+    file: File, 
+    options: TranscriptionOptions
+): Promise<{ 
+    initialResult: RawTranscriptionData, 
+    analysisPromise: Promise<AnalysisData>,
+    cachePromise: Promise<{ name: string, ttl: number } | undefined>
+}> => {
     
-    throw new Error(userFriendlyMessage);
-  }
+    // 1. Upload & Transcribe (Blocking)
+    const { uri, mimeType } = await uploadAudioFile(file);
+    const rawData = await transcribeStep(uri, mimeType, options);
+    
+    const fullText = rawData.transcription
+        .map(s => `[${s.timestamp}] ${s.speaker}: ${s.text}`)
+        .join('\n');
+
+    // 2. Start Analysis & Caching (Non-Blocking Promises)
+    const analysisPromise = analyzeStep(fullText, options);
+    const cachePromise = cacheStep(fullText, file.name);
+
+    return {
+        initialResult: rawData,
+        analysisPromise,
+        cachePromise
+    };
 };

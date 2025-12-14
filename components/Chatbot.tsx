@@ -17,6 +17,7 @@ const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 interface ChatbotProps {
   transcriptionText: string;
+  cacheName?: string; // New prop for Context Caching
   onClose: () => void;
 }
 
@@ -25,7 +26,7 @@ interface Message {
   text: string;
 }
 
-const Chatbot: React.FC<ChatbotProps> = ({ transcriptionText, onClose }) => {
+const Chatbot: React.FC<ChatbotProps> = ({ transcriptionText, cacheName, onClose }) => {
   const [chat, setChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [userInput, setUserInput] = useState('');
@@ -38,23 +39,40 @@ const Chatbot: React.FC<ChatbotProps> = ({ transcriptionText, onClose }) => {
   useEffect(() => {
     setIsInitializingChat(true);
     setInitializationError(null);
-    setMessages([]); // Clear messages from any previous session
+    setMessages([]); 
 
     try {
-      // This operation is synchronous in the current SDK version
-      const chatSession = ai.chats.create({
-        model: 'gemini-3-pro-preview',
-        history: [
-          {
-            role: 'user',
-            parts: [{ text: `You are an expert AI assistant specialized in analyzing text. The user has provided the following document, which is a transcription of an audio file. Your task is to answer the user's questions based *only* on the information contained within this document. If the answer cannot be found in the text, state that clearly. Do not make up information. Here is the document:\n\n---\n\n${transcriptionText}\n\n---` }],
-          },
-          {
-            role: 'model',
-            parts: [{ text: "Understood. I have received the document's context. I am ready to answer questions based on its content." }],
-          },
-        ],
-      });
+      let chatSession;
+
+      if (cacheName) {
+        // Option A: Use Cached Content (Efficient)
+        console.log(`Initializing chat with cache: ${cacheName}`);
+        chatSession = ai.chats.create({
+            model: 'gemini-2.5-flash',
+            config: {
+                cachedContent: cacheName,
+            }
+        });
+        // We still need to visually show the user what's happening, 
+        // even though the context is "hidden" in the cache.
+      } else {
+        // Option B: Standard History Injection (Fallback)
+        console.log("Initializing chat with standard history injection.");
+        chatSession = ai.chats.create({
+            model: 'gemini-3-pro-preview', // Use Pro for fallback if no cache
+            history: [
+            {
+                role: 'user',
+                parts: [{ text: `You are an expert AI assistant specialized in analyzing text. The user has provided the following document. Answer questions based *only* on it.\n\n---\n\n${transcriptionText.substring(0, 30000)}\n\n---` }],
+            },
+            {
+                role: 'model',
+                parts: [{ text: "Understood. I have received the document context." }],
+            },
+            ],
+        });
+      }
+      
       setChat(chatSession);
     } catch (error) {
         console.error("Failed to initialize chat session:", error);
@@ -62,7 +80,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ transcriptionText, onClose }) => {
     } finally {
         setIsInitializingChat(false);
     }
-  }, [transcriptionText]);
+  }, [transcriptionText, cacheName]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -121,7 +139,9 @@ const Chatbot: React.FC<ChatbotProps> = ({ transcriptionText, onClose }) => {
       <header className="flex items-center justify-between p-4 border-b border-beige-200 flex-shrink-0">
         <div className="flex items-center space-x-3">
           <ChatIcon className="w-6 h-6 text-khaki-600" />
-          <h2 className="text-lg font-semibold text-brown-800">AI Chat Assistant</h2>
+          <h2 className="text-lg font-semibold text-brown-800">
+            AI Chat Assistant {cacheName && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full ml-2 border border-green-200">Context Cached</span>}
+          </h2>
         </div>
         <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-brown-700 bg-beige-200 rounded-lg hover:bg-beige-300">
           Close

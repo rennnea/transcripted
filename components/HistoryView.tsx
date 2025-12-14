@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { HistoryItem } from '../types';
-import { cacheService } from '../utils/cacheService';
+import { getAllTranscriptions, clearDatabase, TranscriptionRecord } from '../utils/db'; // Use DB
 import { HistoryIcon } from './icons/HistoryIcon';
 
 interface HistoryViewProps {
@@ -13,12 +13,29 @@ const HistoryView: React.FC<HistoryViewProps> = ({ onSelectItem, onReturnToDashb
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
   
   useEffect(() => {
-    setHistoryItems(cacheService.getAllItems());
+    const loadHistory = async () => {
+        const records = await getAllTranscriptions();
+        // Map DB records to HistoryItems
+        const items: HistoryItem[] = records.map(rec => ({
+            id: rec.id,
+            cacheKey: rec.cacheKey, // Fixed key -> cacheKey to match HistoryItem
+            fileInfo: {
+                name: rec.fileName,
+                size: rec.fileSize,
+                lastModified: rec.lastModified
+            },
+            result: rec.transcriptionData,
+            geminiCacheName: rec.geminiCacheName,
+            geminiCacheExpiry: rec.geminiCacheExpiry
+        }));
+        setHistoryItems(items);
+    };
+    loadHistory();
   }, []);
 
-  const handleClearHistory = () => {
+  const handleClearHistory = async () => {
     if (window.confirm('Are you sure you want to clear your entire transcription history? This action cannot be undone.')) {
-      cacheService.clearAll();
+      await clearDatabase();
       setHistoryItems([]);
     }
   };
@@ -58,12 +75,17 @@ const HistoryView: React.FC<HistoryViewProps> = ({ onSelectItem, onReturnToDashb
         </button>
       </div>
       <ul className="space-y-3">
-        {historyItems.sort((a,b) => b.fileInfo.lastModified - a.fileInfo.lastModified).map(item => (
-          <li key={item.key} className="bg-beige-50 border border-beige-200/80 rounded-xl p-4 flex items-center justify-between space-x-4">
+        {historyItems.map(item => (
+          <li key={item.cacheKey || item.id} className="bg-beige-50 border border-beige-200/80 rounded-xl p-4 flex items-center justify-between space-x-4">
             <div className="flex-1 overflow-hidden">
-              <p className="font-semibold text-brown-800 truncate" title={item.fileInfo.name}>
-                {item.fileInfo.name}
-              </p>
+              <div className="flex items-center space-x-2">
+                <p className="font-semibold text-brown-800 truncate" title={item.fileInfo.name}>
+                    {item.fileInfo.name}
+                </p>
+                {item.geminiCacheName && item.geminiCacheExpiry && item.geminiCacheExpiry > Date.now() && (
+                    <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full border border-green-200" title="Cached in Gemini Context">Cached</span>
+                )}
+              </div>
               <p className="text-sm text-brown-500">
                 Transcribed on {formatDate(item.fileInfo.lastModified)}
               </p>

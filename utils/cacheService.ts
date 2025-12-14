@@ -62,7 +62,8 @@ export const cacheService = {
       if (key && key.startsWith('transcription_')) {
         const data = cacheService.getItem(key);
         if (data) {
-          items.push({ key, ...data });
+          // Fix: HistoryItem uses 'cacheKey', not 'key'
+          items.push({ cacheKey: key, ...data });
         }
       }
     }

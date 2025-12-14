@@ -1,41 +1,46 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import Header from './components/Header';
 import FileUploader from './components/FileUploader';
 import TranscriptionDisplay from './components/TranscriptionDisplay';
 import Settings from './components/Settings';
-import { transcribeAudio } from './services/geminiService';
-import { fileToBase64 } from './utils/fileUtils';
+import { processAudioPipeline } from './services/geminiService';
 import LandingPage from './components/LandingPage';
 import { FileInfo } from './components/FileInfo';
 import Sidebar from './components/Sidebar';
 import InsightsPanel from './components/InsightsPanel';
-import { TranscriptionResult, HistoryItem } from './types';
+import { TranscriptionResult, HistoryItem, RawTranscriptionData, AnalysisData } from './types';
 import TestRunner from './components/TestRunner';
-import { cacheService } from './utils/cacheService';
+import { db, saveTranscription, getTranscription } from './utils/db';
 import HistoryView from './components/HistoryView';
 import Chatbot from './components/Chatbot';
 import { generateCacheKey } from './utils/cacheUtils';
 import { simulateTranscriptionProgress } from './utils/progressUtils';
+import { StatusPill } from './components/StatusPill';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<'landing' | 'upload' | 'transcribing' | 'result' | 'history' | 'chatbot'>('landing');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  
+  // State for progressive loading
   const [transcriptionResult, setTranscriptionResult] = useState<TranscriptionResult | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [activeCacheName, setActiveCacheName] = useState<string | undefined>(undefined);
+  
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [progressState, setProgressState] = useState({ stage: '', percentage: 0 });
   const [estimatedTokens, setEstimatedTokens] = useState<number | null>(null);
   const [showTestRunner, setShowTestRunner] = useState(false);
 
+  // Settings State
   const [language, setLanguage] = useState('en-US');
   const [enableDiarization, setEnableDiarization] = useState(false);
   const [enableSummary, setEnableSummary] = useState(true);
   const [enableEntityExtraction, setEnableEntityExtraction] = useState(true);
   const [enableSentimentAnalysis, setEnableSentimentAnalysis] = useState(true);
   const [enableSearchGrounding, setEnableSearchGrounding] = useState(true);
-
   const [summaryLength, setSummaryLength] = useState('Medium');
   const [summaryDetail, setSummaryDetail] = useState('Detailed');
   const [summaryStructure, setSummaryStructure] = useState('Bullets');
@@ -48,9 +53,7 @@ const App: React.FC = () => {
             resolve(audio.duration);
             URL.revokeObjectURL(audio.src);
         };
-        audio.onerror = () => {
-            resolve(30); // fallback duration in seconds if metadata fails
-        }
+        audio.onerror = () => { resolve(30); }
     });
   };
 
@@ -59,9 +62,9 @@ const App: React.FC = () => {
   const handleFileSelect = async (file: File) => {
     setAudioFile(file);
     setTranscriptionResult(null);
+    setActiveCacheName(undefined);
     setError(null);
     const duration = await getAudioDuration(file);
-    // 1 second of audio is roughly 8 tokens for Gemini Flash model
     setEstimatedTokens(Math.round(duration * 8));
     setAppState('transcribing');
   };
@@ -69,7 +72,9 @@ const App: React.FC = () => {
   const handleClear = () => {
     setAudioFile(null);
     setTranscriptionResult(null);
+    setActiveCacheName(undefined);
     setIsLoading(false);
+    setIsAnalyzing(false);
     setError(null);
     setEstimatedTokens(null);
     setAppState('upload');
@@ -98,17 +103,23 @@ const App: React.FC = () => {
     const mockFile: File = {
       name: item.fileInfo.name,
       size: item.fileInfo.size,
-      type: 'audio/mp3', // Assume a common type as we don't store it
+      type: 'audio/mp3', 
       lastModified: item.fileInfo.lastModified,
     } as File;
 
     setAudioFile(mockFile);
     setTranscriptionResult(item.result);
+    // Check if the cache is still valid
+    if (item.geminiCacheExpiry && item.geminiCacheExpiry > Date.now()) {
+        setActiveCacheName(item.geminiCacheName);
+    } else {
+        setActiveCacheName(undefined);
+    }
+    setIsAnalyzing(false);
     setError(null);
     setIsLoading(false);
     setAppState('result');
   };
-
 
   const handleTranscribe = useCallback(async () => {
     if (!audioFile) {
@@ -122,80 +133,96 @@ const App: React.FC = () => {
     };
 
     const cacheKey = generateCacheKey(audioFile, transcriptionSettings);
-    const cachedData = cacheService.getItem(cacheKey);
-
+    
     setIsLoading(true);
+    setIsAnalyzing(false);
     setError(null);
     setTranscriptionResult(null);
 
-    if (cachedData) {
-      console.log("Loading transcription from persistent cache.");
-      setProgressState({ stage: 'Loading from cache...', percentage: 100 });
-      setTimeout(() => {
-        setTranscriptionResult(cachedData.result);
-        setAppState('result');
-        setIsLoading(false);
-      }, 500);
-      return;
+    // 1. Check DB Cache
+    try {
+        const cachedRecord = await getTranscription(cacheKey);
+        if (cachedRecord) {
+            console.log("Loading transcription from IndexedDB cache.");
+            setProgressState({ stage: 'Loading from cache...', percentage: 100 });
+            
+            setTimeout(() => {
+                setTranscriptionResult(cachedRecord.transcriptionData);
+                if (cachedRecord.geminiCacheExpiry && cachedRecord.geminiCacheExpiry > Date.now()) {
+                    setActiveCacheName(cachedRecord.geminiCacheName);
+                }
+                setAppState('result');
+                setIsLoading(false);
+            }, 500);
+            return;
+        }
+    } catch (e) {
+        console.warn("DB Read Error:", e);
     }
 
+    // 2. Start Pipeline
     let stopProgressSimulation: (() => void) | null = null;
     try {
-      console.log("Starting transcription process.");
-      
-      setProgressState({ stage: 'Preparing audio file...', percentage: 5 });
-      const audioBase64 = await fileToBase64(audioFile);
-      setProgressState({ stage: 'Preparing audio file...', percentage: 15 });
-
-      const uploadDuration = Math.max(200, Math.min(1000, Math.round(audioFile.size / 1024 / 100)));
-      await new Promise(resolve => setTimeout(resolve, uploadDuration));
-      
+      console.log("Starting transcription pipeline.");
       const audioDuration = await getAudioDuration(audioFile);
-      
       stopProgressSimulation = simulateTranscriptionProgress(audioDuration, setProgressState);
       
-      const result = await transcribeAudio(audioBase64, audioFile.type, transcriptionSettings);
+      const { initialResult, analysisPromise, cachePromise } = await processAudioPipeline(audioFile, transcriptionSettings);
       
+      // Stage 1 Complete: Show text immediately
       if (stopProgressSimulation) stopProgressSimulation();
+      setProgressState({ stage: 'Rendering text...', percentage: 100 });
       
-      setProgressState({ stage: 'Finalizing result...', percentage: 100 });
+      const partialResult: TranscriptionResult = {
+          ...initialResult,
+          summary: "",
+          sentiment: { overall: "", trend: [] },
+          entities: {},
+          sources: []
+      };
+
+      setTranscriptionResult(partialResult);
+      setAppState('result');
+      setIsLoading(false);
       
-      if (result) {
-        const fileInfo = { name: audioFile.name, size: audioFile.size, lastModified: audioFile.lastModified };
-        cacheService.setItem(cacheKey, { fileInfo, result });
-        setTranscriptionResult(result);
-        setAppState('result');
-      } else {
-        setError("Transcription failed. The result was empty.");
-        setAppState('result');
-      }
+      // Stage 2: Background Analysis
+      setIsAnalyzing(true);
+      
+      // Wait for analysis and cache in parallel
+      const [analysisData, cacheData] = await Promise.all([analysisPromise, cachePromise]);
+      
+      // Update with full data
+      const finalResult: TranscriptionResult = {
+          ...initialResult,
+          ...analysisData
+      };
+      
+      setTranscriptionResult(finalResult);
+      if (cacheData) setActiveCacheName(cacheData.name);
+      setIsAnalyzing(false);
+
+      // Save to DB
+      await saveTranscription(audioFile, cacheKey, finalResult, cacheData?.name, cacheData?.ttl);
+
     } catch (err) {
       if (stopProgressSimulation) stopProgressSimulation();
       console.error(err);
       setError(err instanceof Error ? err.message : "An unknown error occurred during transcription.");
       setAppState('result');
-    } finally {
       setIsLoading(false);
+      setIsAnalyzing(false);
     }
   }, [audioFile, language, enableDiarization, enableSummary, summaryLength, summaryDetail, summaryStructure, enableEntityExtraction, enableSentimentAnalysis, enableSearchGrounding]);
   
   const handleSaveTranscription = (newResult: TranscriptionResult) => {
     if (transcriptionResult && audioFile) {
       setTranscriptionResult(newResult);
-      // Update the cache with the new result
-      const transcriptionSettings = {
-        language, enableDiarization, enableSummary, summaryLength, summaryDetail,
-        summaryStructure, enableEntityExtraction, enableSentimentAnalysis, enableSearchGrounding
-      };
-      const cacheKey = generateCacheKey(audioFile, transcriptionSettings);
-      const fileInfo = { name: audioFile.name, size: audioFile.size, lastModified: audioFile.lastModified };
-      cacheService.setItem(cacheKey, { fileInfo, result: newResult });
     }
   };
 
   const renderContent = () => {
     const mainContentContainer = (children: React.ReactNode) => (
-      <div className="w-full max-w-4xl mx-auto bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6 md:p-10">
+      <div className="w-full max-w-4xl mx-auto bg-white/60 backdrop-blur-md border border-white/40 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-10 transition-all duration-500">
         {children}
       </div>
     );
@@ -216,46 +243,49 @@ const App: React.FC = () => {
         return transcriptionResult ? (
             <Chatbot 
                 transcriptionText={transcriptionResult.transcription.map(s => `${s.speaker}: ${s.text}`).join('\n')}
+                cacheName={activeCacheName}
                 onClose={() => setAppState('result')}
             />
-        ) : (
-            mainContentContainer(
-                <div className="text-center text-red-500">
-                    Error: No transcription is available to chat with. Please transcribe a file first.
-                </div>
-            )
-        );
+        ) : null;
       case 'result':
-           return <TranscriptionDisplay
-              audioFile={audioFile}
-              isLoading={isLoading}
-              transcription={transcriptionResult}
-              error={error}
-              onClear={handleClear}
-              onSave={handleSaveTranscription}
-              progress={progressState}
-            />
+           return (
+            <>
+               <TranscriptionDisplay
+                  audioFile={audioFile}
+                  isLoading={isLoading}
+                  transcription={transcriptionResult}
+                  error={error}
+                  onClear={handleClear}
+                  onSave={handleSaveTranscription}
+                  progress={progressState}
+                />
+            </>
+           );
       case 'transcribing':
-        if (isLoading) {
-            return <TranscriptionDisplay
-              audioFile={audioFile}
-              isLoading={true}
-              transcription={null}
-              error={null}
-              onClear={handleClear}
-              onSave={handleSaveTranscription}
-              progress={progressState}
-            />
+        if (isLoading && !transcriptionResult) {
+            return (
+                <div className="flex items-center justify-center h-full">
+                    <TranscriptionDisplay
+                    audioFile={audioFile}
+                    isLoading={true}
+                    transcription={null}
+                    error={null}
+                    onClear={handleClear}
+                    onSave={handleSaveTranscription}
+                    progress={progressState}
+                    />
+                </div>
+            );
         }
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 w-full max-w-7xl mx-auto">
-            <div className="lg:col-span-3 flex flex-col justify-center bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-8">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 w-full max-w-7xl mx-auto animate-fade-in-up">
+            <div className="lg:col-span-3 flex flex-col justify-center bg-white/60 backdrop-blur-md border border-white/40 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8">
               <FileInfo file={audioFile} />
                <div className="flex flex-col sm:flex-row justify-start mt-8 space-y-3 sm:space-y-0 sm:space-x-4">
-                  <button onClick={handleTranscribe} disabled={isLoading} className="w-full sm:w-auto px-8 py-3 bg-khaki-600 text-white font-bold rounded-xl hover:bg-khaki-700 focus:outline-none focus:ring-4 focus:ring-khaki-300 transition-all duration-300 transform hover:scale-105 disabled:bg-brown-500 disabled:cursor-not-allowed disabled:scale-100">
+                  <button onClick={handleTranscribe} disabled={isLoading} className="w-full sm:w-auto px-8 py-3 bg-khaki-600 text-white font-bold rounded-xl hover:bg-khaki-700 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-khaki-300 transition-all duration-300 disabled:bg-brown-400 disabled:cursor-not-allowed disabled:transform-none">
                     Transcribe Audio
                   </button>
-                  <button onClick={handleClear} className="w-full sm:w-auto px-8 py-3 bg-beige-200 text-brown-700 font-bold rounded-xl hover:bg-beige-300 focus:outline-none focus:ring-4 focus:ring-beige-200 transition-all duration-300">
+                  <button onClick={handleClear} className="w-full sm:w-auto px-8 py-3 bg-beige-200/50 text-brown-700 font-bold rounded-xl hover:bg-beige-200 focus:outline-none focus:ring-4 focus:ring-beige-200 transition-all duration-300">
                     Change File
                   </button>
                 </div>
@@ -281,7 +311,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen bg-beige-50 text-brown-800 font-sans">
+    <div className="flex h-screen bg-[#FDFBF7] text-brown-800 font-sans selection:bg-khaki-200">
       <Sidebar 
         isOpen={isSidebarOpen} 
         estimatedTokens={estimatedTokens}
@@ -292,13 +322,16 @@ const App: React.FC = () => {
         activeView={appState}
         isResultAvailable={!!transcriptionResult}
       />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden relative">
         <Header onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-        <main className={`flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8 transition-all duration-300 ${appState === 'result' && transcriptionResult ? 'lg:mr-[350px]' : ''}`}>
+        <main className={`flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8 transition-all duration-500 ${appState === 'result' && transcriptionResult ? 'lg:mr-[380px]' : ''}`}>
           {renderContent()}
         </main>
+        {isAnalyzing && <StatusPill />}
       </div>
-      {appState === 'result' && transcriptionResult && <InsightsPanel transcription={transcriptionResult} />}
+      {appState === 'result' && transcriptionResult && (
+        <InsightsPanel transcription={transcriptionResult} isLoading={isAnalyzing} />
+      )}
       {showTestRunner && <TestRunner onClose={() => setShowTestRunner(false)} />}
     </div>
   );
