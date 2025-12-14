@@ -1,0 +1,5 @@
+{
+  "name": "TranscriptedAI",
+  "description": "An application to transcribe audio files using the Gemini API. Users can upload an audio file, and the app will provide a text transcription, entity extraction, diarization.",
+  "requestFramePermissions": []
+}
