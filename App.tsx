@@ -10,16 +10,24 @@ import LandingPage from './components/LandingPage';
 import { FileInfo } from './components/FileInfo';
 import Sidebar from './components/Sidebar';
 import InsightsPanel from './components/InsightsPanel';
-import { TranscriptionResult } from './types';
+import { TranscriptionResult, HistoryItem } from './types';
+import TestRunner from './components/TestRunner';
+import { cacheService } from './utils/cacheService';
+import HistoryView from './components/HistoryView';
+import Chatbot from './components/Chatbot';
+import { generateCacheKey } from './utils/cacheUtils';
+import { simulateTranscriptionProgress } from './utils/progressUtils';
 
 const App: React.FC = () => {
-  const [appState, setAppState] = useState<'landing' | 'upload' | 'transcribing' | 'result'>('landing');
+  const [appState, setAppState] = useState<'landing' | 'upload' | 'transcribing' | 'result' | 'history' | 'chatbot'>('landing');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [transcriptionResult, setTranscriptionResult] = useState<TranscriptionResult | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [progressState, setProgressState] = useState({ stage: '', percentage: 0 });
+  const [estimatedTokens, setEstimatedTokens] = useState<number | null>(null);
+  const [showTestRunner, setShowTestRunner] = useState(false);
 
   const [language, setLanguage] = useState('en-US');
   const [enableDiarization, setEnableDiarization] = useState(false);
@@ -48,10 +56,13 @@ const App: React.FC = () => {
 
   const handleGetStarted = () => setAppState('upload');
 
-  const handleFileSelect = (file: File) => {
+  const handleFileSelect = async (file: File) => {
     setAudioFile(file);
     setTranscriptionResult(null);
     setError(null);
+    const duration = await getAudioDuration(file);
+    // 1 second of audio is roughly 8 tokens for Gemini Flash model
+    setEstimatedTokens(Math.round(duration * 8));
     setAppState('transcribing');
   };
 
@@ -60,8 +71,44 @@ const App: React.FC = () => {
     setTranscriptionResult(null);
     setIsLoading(false);
     setError(null);
+    setEstimatedTokens(null);
     setAppState('upload');
   };
+  
+  const handleShowDashboard = () => {
+    if (appState === 'chatbot') {
+        setAppState('result');
+    } else {
+        handleClear();
+    }
+  };
+  
+  const handleShowHistory = () => {
+    setError(null);
+    setAppState('history');
+  };
+  
+  const handleShowChatbot = () => {
+      if (transcriptionResult) {
+          setAppState('chatbot');
+      }
+  };
+
+  const handleSelectHistoryItem = (item: HistoryItem) => {
+    const mockFile: File = {
+      name: item.fileInfo.name,
+      size: item.fileInfo.size,
+      type: 'audio/mp3', // Assume a common type as we don't store it
+      lastModified: item.fileInfo.lastModified,
+    } as File;
+
+    setAudioFile(mockFile);
+    setTranscriptionResult(item.result);
+    setError(null);
+    setIsLoading(false);
+    setAppState('result');
+  };
+
 
   const handleTranscribe = useCallback(async () => {
     if (!audioFile) {
@@ -69,66 +116,53 @@ const App: React.FC = () => {
       return;
     }
 
-    const settingsCacheKey = JSON.stringify({language, enableDiarization, enableSummary, summaryLength, summaryDetail, summaryStructure, enableEntityExtraction, enableSentimentAnalysis, enableSearchGrounding});
-    const cacheKey = `transcription_${audioFile.name}_${audioFile.size}_${audioFile.lastModified}_${settingsCacheKey}`;
-    const cachedResult = sessionStorage.getItem(cacheKey);
+    const transcriptionSettings = {
+      language, enableDiarization, enableSummary, summaryLength, summaryDetail,
+      summaryStructure, enableEntityExtraction, enableSentimentAnalysis, enableSearchGrounding
+    };
+
+    const cacheKey = generateCacheKey(audioFile, transcriptionSettings);
+    const cachedData = cacheService.getItem(cacheKey);
 
     setIsLoading(true);
     setError(null);
     setTranscriptionResult(null);
 
-    if (cachedResult) {
-      console.log("Loading transcription from cache.");
+    if (cachedData) {
+      console.log("Loading transcription from persistent cache.");
       setProgressState({ stage: 'Loading from cache...', percentage: 100 });
       setTimeout(() => {
-        setTranscriptionResult(JSON.parse(cachedResult));
+        setTranscriptionResult(cachedData.result);
         setAppState('result');
         setIsLoading(false);
       }, 500);
       return;
     }
 
-    let currentInterval: number | undefined;
+    let stopProgressSimulation: (() => void) | null = null;
     try {
       console.log("Starting transcription process.");
       
-      // Stage 1: Preparing Audio (0-15%)
       setProgressState({ stage: 'Preparing audio file...', percentage: 5 });
       const audioBase64 = await fileToBase64(audioFile);
       setProgressState({ stage: 'Preparing audio file...', percentage: 15 });
 
-      // Stage 2: Uploading to AI (15-30%)
-      await new Promise(resolve => setTimeout(resolve, 200)); // Simulate network latency
-      setProgressState({ stage: 'Sending to AI for transcription...', percentage: 30 });
-      
-      // Stage 3: AI is Transcribing (30-95%)
-      const transcriptionPromise = transcribeAudio(
-        audioBase64, audioFile.type, language, enableDiarization, 
-        enableSummary, summaryLength, summaryDetail, summaryStructure, enableEntityExtraction,
-        enableSentimentAnalysis, enableSearchGrounding
-      );
+      const uploadDuration = Math.max(200, Math.min(1000, Math.round(audioFile.size / 1024 / 100)));
+      await new Promise(resolve => setTimeout(resolve, uploadDuration));
       
       const audioDuration = await getAudioDuration(audioFile);
       
-      // Estimate processing time to be ~1/4 of audio duration for a smoother progress bar
-      // This is a rough estimate but provides better UX than a static spinner.
-      const estimatedProcessingTimeMs = (audioDuration / 4) * 1000;
-      const progressSteps = 95 - 30; // 65 steps
-      const intervalTime = Math.max(50, estimatedProcessingTimeMs / progressSteps);
+      stopProgressSimulation = simulateTranscriptionProgress(audioDuration, setProgressState);
       
-      setProgressState(prev => ({ ...prev, stage: 'AI is transcribing...' }));
-      currentInterval = window.setInterval(() => {
-        setProgressState(prev => ({ ...prev, percentage: Math.min(prev.percentage + 1, 95) }));
-      }, intervalTime);
-
-      const result = await transcriptionPromise;
-      clearInterval(currentInterval);
+      const result = await transcribeAudio(audioBase64, audioFile.type, transcriptionSettings);
       
-      // Stage 4: Finalizing (95-100%)
+      if (stopProgressSimulation) stopProgressSimulation();
+      
       setProgressState({ stage: 'Finalizing result...', percentage: 100 });
       
       if (result) {
-        sessionStorage.setItem(cacheKey, JSON.stringify(result));
+        const fileInfo = { name: audioFile.name, size: audioFile.size, lastModified: audioFile.lastModified };
+        cacheService.setItem(cacheKey, { fileInfo, result });
         setTranscriptionResult(result);
         setAppState('result');
       } else {
@@ -136,7 +170,7 @@ const App: React.FC = () => {
         setAppState('result');
       }
     } catch (err) {
-      if (currentInterval) clearInterval(currentInterval);
+      if (stopProgressSimulation) stopProgressSimulation();
       console.error(err);
       setError(err instanceof Error ? err.message : "An unknown error occurred during transcription.");
       setAppState('result');
@@ -145,9 +179,17 @@ const App: React.FC = () => {
     }
   }, [audioFile, language, enableDiarization, enableSummary, summaryLength, summaryDetail, summaryStructure, enableEntityExtraction, enableSentimentAnalysis, enableSearchGrounding]);
   
-  const handleSaveTranscription = (newText: string) => {
-    if (transcriptionResult) {
-      setTranscriptionResult({ ...transcriptionResult, text: newText });
+  const handleSaveTranscription = (newResult: TranscriptionResult) => {
+    if (transcriptionResult && audioFile) {
+      setTranscriptionResult(newResult);
+      // Update the cache with the new result
+      const transcriptionSettings = {
+        language, enableDiarization, enableSummary, summaryLength, summaryDetail,
+        summaryStructure, enableEntityExtraction, enableSentimentAnalysis, enableSearchGrounding
+      };
+      const cacheKey = generateCacheKey(audioFile, transcriptionSettings);
+      const fileInfo = { name: audioFile.name, size: audioFile.size, lastModified: audioFile.lastModified };
+      cacheService.setItem(cacheKey, { fileInfo, result: newResult });
     }
   };
 
@@ -163,6 +205,26 @@ const App: React.FC = () => {
         return <LandingPage onGetStarted={handleGetStarted} />;
       case 'upload':
         return mainContentContainer(<FileUploader onFileSelect={handleFileSelect} />);
+       case 'history':
+        return mainContentContainer(
+          <HistoryView 
+            onSelectItem={handleSelectHistoryItem} 
+            onReturnToDashboard={handleClear}
+          />
+        );
+      case 'chatbot':
+        return transcriptionResult ? (
+            <Chatbot 
+                transcriptionText={transcriptionResult.transcription.map(s => `${s.speaker}: ${s.text}`).join('\n')}
+                onClose={() => setAppState('result')}
+            />
+        ) : (
+            mainContentContainer(
+                <div className="text-center text-red-500">
+                    Error: No transcription is available to chat with. Please transcribe a file first.
+                </div>
+            )
+        );
       case 'result':
            return <TranscriptionDisplay
               audioFile={audioFile}
@@ -174,7 +236,7 @@ const App: React.FC = () => {
               progress={progressState}
             />
       case 'transcribing':
-        if (isLoading) { // Show loading screen immediately if transcribing
+        if (isLoading) {
             return <TranscriptionDisplay
               audioFile={audioFile}
               isLoading={true}
@@ -220,7 +282,16 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-beige-50 text-brown-800 font-sans">
-      <Sidebar isOpen={isSidebarOpen} />
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        estimatedTokens={estimatedTokens}
+        onRunTests={() => setShowTestRunner(true)}
+        onShowDashboard={handleShowDashboard}
+        onShowHistory={handleShowHistory}
+        onShowChatbot={handleShowChatbot}
+        activeView={appState}
+        isResultAvailable={!!transcriptionResult}
+      />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
         <main className={`flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8 transition-all duration-300 ${appState === 'result' && transcriptionResult ? 'lg:mr-[350px]' : ''}`}>
@@ -228,6 +299,7 @@ const App: React.FC = () => {
         </main>
       </div>
       {appState === 'result' && transcriptionResult && <InsightsPanel transcription={transcriptionResult} />}
+      {showTestRunner && <TestRunner onClose={() => setShowTestRunner(false)} />}
     </div>
   );
 };

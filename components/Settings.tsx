@@ -65,7 +65,7 @@ const SampleOutput: React.FC<SampleOutputProps> = ({
   else summaryContent = summaryKeyValue;
 
   const sentimentText = "Positive";
-  const entitiesText = "Emberek:\n  - John Doe, Jane Smith\nSzervezetek:\n  - Sample Corp";
+  const entitiesText = "People:\n  - John Doe, Jane Smith\nOrganizations:\n  - Sample Corp";
 
   return (
     <div className="mt-6 pt-4 border-t border-beige-200">

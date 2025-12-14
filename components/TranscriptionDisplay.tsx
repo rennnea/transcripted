@@ -9,9 +9,11 @@ import { SummaryIcon } from './icons/SummaryIcon';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { EntitiesIcon } from './icons/EntitiesIcon';
 import { SentimentIcon } from './icons/SentimentIcon';
-import { TranscriptionResult } from '../types';
+import { TranscriptionResult, TranscriptionSegment } from '../types';
 import { LinkIcon } from './icons/LinkIcon';
 import ProgressIndicator from './ProgressIndicator';
+import { SentimentTrendIcon } from './icons/SentimentTrendIcon';
+import { SentimentTrendChart } from './charts/SentimentTrendChart';
 
 interface TranscriptionDisplayProps {
   audioFile: File | null;
@@ -19,7 +21,7 @@ interface TranscriptionDisplayProps {
   transcription: TranscriptionResult | null;
   error: string | null;
   onClear: () => void;
-  onSave: (newText: string) => void;
+  onSave: (newResult: TranscriptionResult) => void;
   progress: { stage: string; percentage: number };
 }
 
@@ -27,14 +29,12 @@ const ENTITY_COLORS: { [key: string]: string } = {
     'People': 'bg-khaki-100 text-brown-800',
     'Organizations': 'bg-amber-100 text-brown-800',
     'Locations': 'bg-lime-100 text-brown-800',
-    'Dates': 'bg-yellow-100 text-brown-800',
+    'Other': 'bg-sky-100 text-brown-800',
     'Default': 'bg-beige-200 text-brown-800',
-    'Emberek': 'bg-khaki-100 text-brown-800',
-    'Szervezetek': 'bg-amber-100 text-brown-800',
-    'Helyszínek': 'bg-lime-100 text-brown-800',
 };
 
 const SentimentDisplay: React.FC<{ sentiment: string }> = ({ sentiment }) => {
+    if (!sentiment) return null;
     const sentimentLower = sentiment.toLowerCase();
     let bgColor = 'bg-beige-200';
     let textColor = 'text-brown-800';
@@ -61,23 +61,65 @@ const SentimentDisplay: React.FC<{ sentiment: string }> = ({ sentiment }) => {
     );
 };
 
+// Helper to format the structured data into a downloadable text file content
+const formatResultForDownload = (result: TranscriptionResult): string => {
+  let content = '';
+
+  // Transcription
+  content += 'TRANSCRIPTION\n' + '-'.repeat(13) + '\n';
+  result.transcription.forEach(seg => {
+    content += `${seg.timestamp} ${seg.speaker}: ${seg.text}\n`;
+  });
+  content += '\n';
+
+  // Summary
+  if (result.summary) {
+    content += 'SUMMARY\n' + '-'.repeat(7) + '\n';
+    content += result.summary + '\n\n';
+  }
+
+  // Sentiment
+  if (result.sentiment?.overall) {
+    content += 'SENTIMENT ANALYSIS\n' + '-'.repeat(18) + '\n';
+    content += `Overall: ${result.sentiment.overall}\n\n`;
+  }
+
+  // Entities
+  if (result.entities && Object.keys(result.entities).length > 0) {
+    content += 'EXTRACTED ENTITIES\n' + '-'.repeat(18) + '\n';
+    for (const category in result.entities) {
+      content += `${category}:\n - ${result.entities[category].join(', ')}\n`;
+    }
+    content += '\n';
+  }
+  
+  // Sources
+  if (result.sources && result.sources.length > 0) {
+    content += 'SOURCES\n' + '-'.repeat(7) + '\n';
+    result.sources.forEach(source => {
+      content += `- ${source.web.title || 'Untitled'} (${source.web.uri})\n`;
+    });
+  }
+
+  return content;
+};
+
 const TranscriptionDisplay: React.FC<TranscriptionDisplayProps> = ({
   audioFile, isLoading, transcription, error, onClear, onSave, progress
 }) => {
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedText, setEditedText] = useState(transcription?.text || '');
+  const [editedTranscription, setEditedTranscription] = useState<TranscriptionSegment[]>([]);
 
   useEffect(() => {
-    if (transcription) setEditedText(transcription.text);
+    if (transcription) {
+        setEditedTranscription(JSON.parse(JSON.stringify(transcription.transcription)));
+    }
   }, [transcription]);
 
   const handleCopy = () => {
     if (transcription) {
-      const formattedText = transcription.text
-        .replace(/--- SUMMARY ---/g, '\n\nSUMMARY\n--------\n')
-        .replace(/--- SENTIMENT ---/g, '\n\nSENTIMENT ANALYSIS\n------------------\n')
-        .replace(/--- ENTITIES ---/g, '\n\nEXTRACTED ENTITIES\n------------------\n');
+      const formattedText = formatResultForDownload(transcription);
       navigator.clipboard.writeText(formattedText);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -85,21 +127,31 @@ const TranscriptionDisplay: React.FC<TranscriptionDisplayProps> = ({
   };
   
   const handleEdit = () => setIsEditing(true);
+
   const handleCancel = () => {
-    setEditedText(transcription?.text || '');
+    if (transcription) {
+        setEditedTranscription(JSON.parse(JSON.stringify(transcription.transcription)));
+    }
     setIsEditing(false);
   };
+
   const handleSave = () => {
-    onSave(editedText);
-    setIsEditing(false);
+    if (transcription) {
+      const newResult: TranscriptionResult = { ...transcription, transcription: editedTranscription };
+      onSave(newResult);
+      setIsEditing(false);
+    }
+  };
+  
+  const handleSegmentChange = (index: number, newText: string) => {
+    const updatedSegments = [...editedTranscription];
+    updatedSegments[index].text = newText;
+    setEditedTranscription(updatedSegments);
   };
 
   const handleDownload = () => {
     if (!transcription) return;
-    const formattedText = transcription.text
-      .replace(/--- SUMMARY ---/g, '\n\nSUMMARY\n--------\n')
-      .replace(/--- SENTIMENT ---/g, '\n\nSENTIMENT ANALYSIS\n------------------\n')
-      .replace(/--- ENTITIES ---/g, '\n\nEXTRACTED ENTITIES\n------------------\n');
+    const formattedText = formatResultForDownload(transcription);
     const blob = new Blob([formattedText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -111,38 +163,11 @@ const TranscriptionDisplay: React.FC<TranscriptionDisplayProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  const renderFormattedText = (text: string) => {
-    const [transcriptionText, remainingText1] = text.split('--- SUMMARY ---', 2);
-    const [summaryText, remainingText2] = (remainingText1 || '').split('--- SENTIMENT ---', 2);
-    const [sentimentText, entitiesText] = (remainingText2 || '').split('--- ENTITIES ---', 2);
-
-    const renderEntityLines = (lines: string) => {
-        let currentCategory = 'Default';
-        return lines.split('\n').map((line, index) => {
-            const trimmedLine = line.trim();
-            if (!trimmedLine) return null;
-            if (trimmedLine.endsWith(':')) {
-                currentCategory = trimmedLine.slice(0, -1);
-                return <h4 key={index} className="text-sm font-semibold text-brown-700 mt-4 mb-2">{currentCategory}</h4>;
-            }
-            const items = trimmedLine.replace(/^- /, '').split(',').map(item => item.trim());
-            return (
-                <div key={index} className="flex flex-wrap gap-2">
-                    {items.map((item, i) => (
-                        <span key={i} className={`px-2.5 py-1 text-sm font-medium rounded-full border border-black/5 shadow-sm ${ENTITY_COLORS[currentCategory] || ENTITY_COLORS.Default}`}>
-                            {item}
-                        </span>
-                    ))}
-                </div>
-            );
-        });
-    };
-    
-    const renderClickableLinks = (line: string) => {
+  const renderClickableLinks = (line: string) => {
       const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
       const parts = line.split(linkRegex);
       return parts.map((part, i) => {
-        if (i % 3 === 1) { // This is the link text
+        if (i % 3 === 1) {
           const url = parts[i + 1];
           return (
             <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-khaki-600 hover:underline font-medium">
@@ -150,79 +175,10 @@ const TranscriptionDisplay: React.FC<TranscriptionDisplayProps> = ({
             </a>
           );
         }
-        if (i % 3 === 2) return null; // This is the URL, already used
+        if (i % 3 === 2) return null;
         return part;
       });
     };
-    
-    const renderTranscriptionLines = (lines: string) => {
-      return lines.split('\n').map((line, index) => {
-        const trimmedLine = line.trim();
-        if (!trimmedLine) return <div key={index} className="h-4" />;
-        const speakerRegex = /^(Speaker \d+|[A-Z\s]+):/i;
-        const speakerMatch = trimmedLine.match(speakerRegex);
-        if (speakerMatch) {
-          const speech = trimmedLine.substring(speakerMatch[0].length);
-          return (
-            <p key={index} className="mb-3">
-              <span className="font-bold text-khaki-600 mr-2">{speakerMatch[0]}</span>
-              <span className="text-brown-700">{renderClickableLinks(speech)}</span>
-            </p>
-          );
-        }
-        return <p key={index} className="mb-3 text-brown-700">{renderClickableLinks(trimmedLine)}</p>;
-      });
-    };
-
-    return (
-      <>
-        {sentimentText && <SentimentDisplay sentiment={sentimentText.trim()} />}
-        
-        {summaryText && (
-          <div className="bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6">
-            <h3 className="flex items-center space-x-2 font-semibold text-brown-800 text-lg mb-4">
-              <SummaryIcon className="w-6 h-6 text-khaki-500"/>
-              <span>Summary</span>
-            </h3>
-            <div className="prose prose-sm max-w-none text-brown-700">{renderTranscriptionLines(summaryText)}</div>
-          </div>
-        )}
-
-        {transcription?.sources && transcription.sources.length > 0 && (
-          <div className="bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6">
-            <h3 className="flex items-center space-x-2 font-semibold text-brown-800 text-lg mb-2">
-              <LinkIcon className="w-6 h-6 text-khaki-500"/>
-              <span>Sources</span>
-            </h3>
-            <p className="text-xs text-brown-500 mb-4">The following web pages were consulted by the AI to provide a factually grounded summary.</p>
-            <ul className="list-disc list-inside space-y-2">
-              {transcription.sources.map((source: any, index: number) => (
-                <li key={index} className="text-sm">
-                  <a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="text-khaki-600 hover:underline">
-                    {source.web.title || source.web.uri}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {entitiesText && (
-            <div className="bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6">
-                <h3 className="flex items-center space-x-2 font-semibold text-brown-800 text-lg mb-4">
-                  <EntitiesIcon className="w-6 h-6 text-khaki-500"/>
-                  <span>Extracted Entities</span>
-                </h3>
-                <div className="space-y-2">{renderEntityLines(entitiesText)}</div>
-            </div>
-        )}
-
-        <div className="bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6">
-             {renderTranscriptionLines(transcriptionText)}
-        </div>
-      </>
-    );
-  };
 
   if (isLoading) return <ProgressIndicator stage={progress.stage} percentage={progress.percentage} />;
 
@@ -242,41 +198,132 @@ const TranscriptionDisplay: React.FC<TranscriptionDisplayProps> = ({
   if (transcription) {
     return (
       <div className="space-y-6">
-        {isEditing ? (
-          <>
-            <textarea
-              className="w-full h-96 p-4 bg-beige-100 border border-khaki-500 rounded-lg text-brown-800 overflow-y-auto focus:outline-none focus:ring-2 focus:ring-khaki-300 transition-all"
-              value={editedText}
-              onChange={(e) => setEditedText(e.target.value)}
-              aria-label="Transcription editor"
-            />
-            <div className="flex justify-end space-x-3">
+        <div className="relative">
+            <div className="w-full max-h-[70vh] space-y-6 text-brown-800 overflow-y-auto pr-4">
+               <SentimentDisplay sentiment={transcription.sentiment?.overall} />
+
+                {transcription.sentiment?.trend && transcription.sentiment.trend.length > 0 && (
+                  <div className="bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6">
+                    <h3 className="flex items-center space-x-2 font-semibold text-brown-800 text-lg mb-4">
+                      <SentimentTrendIcon className="w-6 h-6 text-khaki-500"/>
+                      <span>Sentiment Trend</span>
+                    </h3>
+                    <SentimentTrendChart data={transcription.sentiment.trend} />
+                  </div>
+                )}
+                
+                {transcription.summary && (
+                  <div className="bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6">
+                    <h3 className="flex items-center space-x-2 font-semibold text-brown-800 text-lg mb-4">
+                      <SummaryIcon className="w-6 h-6 text-khaki-500"/>
+                      <span>Summary</span>
+                    </h3>
+                    <div className="prose prose-sm max-w-none text-brown-700 whitespace-pre-wrap">{renderClickableLinks(transcription.summary)}</div>
+                  </div>
+                )}
+
+                {transcription.sources && transcription.sources.length > 0 && (
+                  <div className="bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6">
+                    <h3 className="flex items-center space-x-2 font-semibold text-brown-800 text-lg mb-2">
+                      <LinkIcon className="w-6 h-6 text-khaki-500"/>
+                      <span>Sources</span>
+                    </h3>
+                    <p className="text-xs text-brown-500 mb-4">The following web pages were consulted by the AI to provide a factually grounded summary.</p>
+                    <ul className="list-disc list-inside space-y-2">
+                      {transcription.sources.map((source: any, index: number) => (
+                        <li key={index} className="text-sm">
+                          <a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="text-khaki-600 hover:underline">
+                            {source.web.title || source.web.uri}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {transcription.entities && Object.keys(transcription.entities).length > 0 && (
+                    <div className="bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6">
+                        <h3 className="flex items-center space-x-2 font-semibold text-brown-800 text-lg mb-4">
+                          <EntitiesIcon className="w-6 h-6 text-khaki-500"/>
+                          <span>Extracted Entities</span>
+                        </h3>
+                        <div className="space-y-4">
+                          {Object.entries(transcription.entities).map(([category, items]) => (
+                            <div key={category}>
+                                <h4 className="text-sm font-semibold text-brown-700 mb-2">{category}</h4>
+                                <div className="flex flex-wrap gap-2">
+                                  {items.map((item, i) => (
+                                    <span key={i} className={`px-2.5 py-1 text-sm font-medium rounded-full border border-black/5 shadow-sm ${ENTITY_COLORS[category] || ENTITY_COLORS.Default}`}>
+                                        {item}
+                                    </span>
+                                  ))}
+                                </div>
+                            </div>
+                          ))}
+                        </div>
+                    </div>
+                )}
+
+                <div className="bg-beige-100 border border-beige-200/80 rounded-2xl shadow-sm p-6">
+                     {isEditing ? (
+                        <div className="space-y-4">
+                          {editedTranscription.map((segment, index) => (
+                            <div key={index} className="grid grid-cols-[auto_1fr] items-start gap-x-3 gap-y-1">
+                                <div className="flex items-center col-start-1 row-start-1">
+                                  <span className="font-mono text-xs text-brown-500 pt-2.5">{segment.timestamp}</span>
+                                  <span className="font-bold text-khaki-600 ml-3 pt-2.5">{segment.speaker}:</span>
+                                </div>
+                                <textarea
+                                  value={segment.text}
+                                  onChange={(e) => handleSegmentChange(index, e.target.value)}
+                                  className="col-start-1 sm:col-start-2 row-start-2 sm:row-start-1 w-full p-2 bg-beige-50 border border-beige-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-khaki-500"
+                                  rows={Math.max(1, segment.text.split('\n').length)}
+                                />
+                            </div>
+                          ))}
+                        </div>
+                     ) : (
+                        transcription.transcription.map((segment, index) => (
+                          <div key={index} className="flex items-start gap-3 mb-3">
+                            <span className="font-mono text-xs text-brown-500 pt-1">{segment.timestamp}</span>
+                            <div className="flex-1">
+                              <p>
+                                <span className="font-bold text-khaki-600 mr-2">{segment.speaker}:</span>
+                                <span className="text-brown-700 whitespace-pre-wrap">{segment.text}</span>
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                     )}
+                </div>
+            </div>
+            <div className="absolute top-4 right-4 flex space-x-1 bg-beige-100/50 backdrop-blur-sm rounded-lg p-1">
+              {!isEditing && (
+                <>
+                  <button onClick={handleDownload} className="p-2 text-brown-500 rounded-md hover:bg-beige-200 hover:text-brown-800 focus:outline-none focus:ring-2 focus:ring-khaki-500" title="Download transcription">
+                    <DownloadIcon className="w-5 h-5" />
+                  </button>
+                  <button onClick={handleEdit} className="p-2 text-brown-500 rounded-md hover:bg-beige-200 hover:text-brown-800 focus:outline-none focus:ring-2 focus:ring-khaki-500" title="Edit transcription">
+                    <EditIcon className="w-5 h-5" />
+                  </button>
+                  <button onClick={handleCopy} className="p-2 text-brown-500 rounded-md hover:bg-beige-200 hover:text-brown-800 focus:outline-none focus:ring-2 focus:ring-khaki-500" title={copied ? "Copied!" : "Copy to clipboard"}>
+                    {copied ? <CheckIcon className="w-5 h-5 text-green-500" /> : <CopyIcon className="w-5 h-5" />}
+                  </button>
+                </>
+              )}
+            </div>
+        </div>
+
+        {isEditing && (
+            <div className="flex justify-end space-x-3 pt-4 border-t border-beige-200">
               <button onClick={handleCancel} className="px-4 py-2 bg-beige-200 text-brown-800 font-semibold rounded-lg hover:bg-beige-300">
                 Cancel
               </button>
               <button onClick={handleSave} className="px-4 py-2 bg-khaki-600 text-white font-semibold rounded-lg hover:bg-khaki-700 flex items-center space-x-2">
                 <SaveIcon className="w-5 h-5" />
-                <span>Save & Close</span>
+                <span>Save Changes</span>
               </button>
             </div>
-          </>
-        ) : (
-          <div className="relative">
-            <div className="w-full max-h-[70vh] space-y-6 text-brown-800 overflow-y-auto pr-4">
-              {renderFormattedText(transcription.text)}
-            </div>
-            <div className="absolute top-4 right-4 flex space-x-1 bg-beige-100/50 backdrop-blur-sm rounded-lg p-1">
-              <button onClick={handleDownload} className="p-2 text-brown-500 rounded-md hover:bg-beige-200 hover:text-brown-800 focus:outline-none focus:ring-2 focus:ring-khaki-500" title="Download transcription">
-                <DownloadIcon className="w-5 h-5" />
-              </button>
-              <button onClick={handleEdit} className="p-2 text-brown-500 rounded-md hover:bg-beige-200 hover:text-brown-800 focus:outline-none focus:ring-2 focus:ring-khaki-500" title="Edit transcription">
-                <EditIcon className="w-5 h-5" />
-              </button>
-              <button onClick={handleCopy} className="p-2 text-brown-500 rounded-md hover:bg-beige-200 hover:text-brown-800 focus:outline-none focus:ring-2 focus:ring-khaki-500" title={copied ? "Copied!" : "Copy to clipboard"}>
-                {copied ? <CheckIcon className="w-5 h-5 text-green-500" /> : <CopyIcon className="w-5 h-5" />}
-              </button>
-            </div>
-          </div>
         )}
         <button onClick={onClear} className="w-full px-6 py-3 bg-khaki-600 text-white font-bold rounded-xl hover:bg-khaki-700 focus:outline-none focus:ring-4 focus:ring-khaki-300/50 transition-all">
           Transcribe Another File

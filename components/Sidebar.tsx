@@ -2,12 +2,22 @@
 import React from 'react';
 import { TranscriptedAIIcon } from './icons/TranscriptedAIIcon';
 import { DashboardIcon } from './icons/DashboardIcon';
-import { FolderIcon } from './icons/FolderIcon';
+import { HistoryIcon } from './icons/HistoryIcon';
 import { SettingsIcon } from './icons/SettingsIcon';
 import { HelpIcon } from './icons/HelpIcon';
+import { TokenIcon } from './icons/TokenIcon';
+import { TestIcon } from './icons/TestIcon';
+import { ChatIcon } from './icons/ChatIcon';
 
 interface SidebarProps {
   isOpen: boolean;
+  estimatedTokens: number | null;
+  onRunTests: () => void;
+  onShowDashboard: () => void;
+  onShowHistory: () => void;
+  onShowChatbot: () => void;
+  activeView: 'landing' | 'upload' | 'transcribing' | 'result' | 'history' | 'chatbot';
+  isResultAvailable: boolean;
 }
 
 interface NavLinkProps {
@@ -15,10 +25,12 @@ interface NavLinkProps {
   label: string;
   active?: boolean;
   disabled?: boolean;
+  onClick?: () => void;
+  tooltip?: string;
 }
 
-const NavLink: React.FC<NavLinkProps> = ({ icon, label, active, disabled }) => {
-  const baseClasses = "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors duration-200";
+const NavLink: React.FC<NavLinkProps> = ({ icon, label, active, disabled, onClick, tooltip }) => {
+  const baseClasses = "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors duration-200 w-full text-left";
   const activeClasses = "bg-khaki-600 text-white shadow-sm";
   const inactiveClasses = "text-brown-700 hover:bg-beige-200 hover:text-brown-800";
   const disabledClasses = "text-brown-500/60 cursor-not-allowed opacity-70";
@@ -26,19 +38,23 @@ const NavLink: React.FC<NavLinkProps> = ({ icon, label, active, disabled }) => {
   const finalClasses = `${baseClasses} ${disabled ? disabledClasses : (active ? activeClasses : inactiveClasses)}`;
 
   return (
-    <a 
-      href={disabled ? undefined : "#"} 
-      onClick={disabled ? (e) => e.preventDefault() : undefined}
+    <button
+      onClick={onClick}
+      disabled={disabled}
       className={finalClasses}
-      title={disabled ? "This feature is coming soon!" : undefined}
+      title={tooltip}
     >
       {icon}
       <span className="font-medium">{label}</span>
-    </a>
+    </button>
   );
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, estimatedTokens, onRunTests, onShowDashboard, onShowHistory, onShowChatbot, activeView, isResultAvailable }) => {
+  const isDashboardActive = ['landing', 'upload', 'transcribing', 'result'].includes(activeView);
+  const isHistoryActive = activeView === 'history';
+  const isChatbotActive = activeView === 'chatbot';
+
   return (
     <nav className={`flex-shrink-0 bg-beige-100 border-r border-beige-200 transition-all duration-300 ${isOpen ? 'w-64' : 'w-0'} overflow-hidden`}>
       <div className="flex flex-col h-full">
@@ -49,12 +65,32 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
             <h1 className="text-xl font-bold text-brown-800 font-poppins">TranscriptedAI</h1>
         </div>
         <div className="flex-1 p-4 space-y-2">
-            <NavLink icon={<DashboardIcon className="w-6 h-6"/>} label="Dashboard" active />
-            <NavLink icon={<FolderIcon className="w-6 h-6"/>} label="All Transcripts" disabled />
-            <NavLink icon={<SettingsIcon className="w-6 h-6"/>} label="Settings" disabled />
+            <NavLink icon={<DashboardIcon className="w-6 h-6"/>} label="Dashboard" onClick={onShowDashboard} active={isDashboardActive} />
+            <NavLink icon={<HistoryIcon className="w-6 h-6"/>} label="History" onClick={onShowHistory} active={isHistoryActive} />
+            <NavLink 
+              icon={<ChatIcon className="w-6 h-6"/>} 
+              label="AI Chat" 
+              onClick={onShowChatbot} 
+              active={isChatbotActive} 
+              disabled={!isResultAvailable} 
+              tooltip={!isResultAvailable ? "Transcribe a file to enable the AI Chat" : "Ask questions about your transcript"}
+            />
+            <NavLink icon={<SettingsIcon className="w-6 h-6"/>} label="Settings" disabled tooltip="Coming soon!" />
         </div>
-        <div className="p-4 border-t border-beige-200">
-            <NavLink icon={<HelpIcon className="w-6 h-6"/>} label="Help & Support" />
+        <div className="p-4 border-t border-beige-200 space-y-4">
+            {estimatedTokens !== null && activeView !== 'history' && (
+              <div className="p-3 bg-beige-200/70 rounded-lg text-xs text-brown-700">
+                <div className="flex items-center space-x-2.5">
+                  <TokenIcon className="w-5 h-5 text-khaki-700 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold">~ {estimatedTokens.toLocaleString()} tokens</p>
+                    <p className="text-brown-500">Estimated for current file</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            <NavLink icon={<TestIcon className="w-6 h-6"/>} label="Run Tests" onClick={onRunTests} />
+            <NavLink icon={<HelpIcon className="w-6 h-6"/>} label="Help & Support" disabled tooltip="Coming soon!" />
         </div>
       </div>
     </nav>
