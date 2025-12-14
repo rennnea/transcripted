@@ -9,14 +9,14 @@ interface ProgressIndicatorProps {
 const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({ stage, percentage }) => {
   return (
     <div className="flex flex-col items-center justify-center space-y-5 h-96">
-        <p className="text-lg text-brown-700 font-semibold">{stage}</p>
-        <div className="w-full max-w-md bg-beige-200 rounded-full h-2.5">
+        <p className="text-lg text-brown-700 dark:text-gray-300 font-semibold">{stage}</p>
+        <div className="w-full max-w-md bg-beige-200 dark:bg-gray-700 rounded-full h-2.5">
             <div 
-            className="bg-khaki-600 h-2.5 rounded-full transition-all duration-500 ease-out" 
+            className="bg-khaki-600 dark:bg-khaki-500 h-2.5 rounded-full transition-all duration-500 ease-out" 
             style={{ width: `${percentage}%` }}
             ></div>
       </div>
-      <p className="text-sm text-brown-500">This may take a moment for larger files.</p>
+      <p className="text-sm text-brown-500 dark:text-gray-400">This may take a moment for larger files.</p>
     </div>
   );
 };
