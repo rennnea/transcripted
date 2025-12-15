@@ -14,9 +14,9 @@ TranscriptedAI is a modern web application that leverages the power of the Googl
 - **AI-Powered Summarization**: Generate concise summaries of your transcriptions. Customize the summary's **length**, **detail level**, and **structure** (paragraph, bullets, key-value).
 - **Factual Grounding**: Optionally enable Google Search integration to ground the summary in up-to-date, factual information, complete with source citations.
 - **Insightful Analytics**:
-    - **Entity Extraction**: Automatically identifies and categorizes key entities like people, organizations, and locations.
-    - **Sentiment Analysis**: Determines the overall emotional tone of the conversation.
-    - **Visual Data**: Interactive charts showing sentiment distribution over time and speaker dominance.
+  - **Entity Extraction**: Automatically identifies and categorizes key entities like people, organizations, and locations.
+  - **Sentiment Analysis**: Determines the overall emotional tone of the conversation.
+  - **Visual Data**: Interactive charts showing sentiment distribution over time and speaker dominance.
 - **Sentiment Lab**: An experimental, interactive playground for real-time text analysis visualization.
 - **Interactive Insights Panel**: Visualize speaker contribution and review grounding sources in a dedicated side panel.
 - **Transcription Editor**: Easily edit and refine the generated transcript directly within the app.
@@ -44,23 +44,24 @@ Follow these instructions to get a local copy of the project up and running for 
 
 ### Installation & Setup
 
-1.  **Clone the repository:**
+1. **Clone the repository:**
+
     ```sh
     git clone https://github.com/your-username/transcripted-ai.git
     cd transcripted-ai
     ```
 
-2.  **Set up your API Key:**
+2. **Set up your API Key:**
     The application loads the Gemini API key from `process.env.API_KEY`. You will need to configure this in your development environment.
 
-3.  **Install dependencies and run:**
+3. **Install dependencies and run:**
     This project is configured to run in a specific web-based development environment. Simply load the project files, ensure your `API_KEY` is set as an environment variable, and the application will be served automatically.
 
 ## 📂 Project Structure
 
 The codebase is organized to be clean and maintainable:
 
-```
+```text
 /
 ├── components/             # Reusable React components
 │   ├── charts/             # Chart components for analytics (D3.js integration)
@@ -86,14 +87,14 @@ The codebase is organized to be clean and maintainable:
 
 This project has a strong foundation, but there are many exciting features that could be added next:
 
--   **Real-time Microphone Transcription**: Implement live audio transcription using the device microphone, potentially leveraging the Gemini Live API for real-time, low-latency responses.
--   **User Accounts & History**: Add user authentication (e.g., using Firebase Auth) to allow users to save, view, and manage their transcription history in a database (like Firestore).
--   **Advanced Analytics Dashboard**: Expand the "Insights" panel into a full dashboard with more visualizations, such as word frequency clouds and talk-to-listen ratio analysis.
--   **Video File Support**: Allow users to upload video files, automatically extract the audio track, and transcribe it.
--   **Custom Vocabulary**: Add a feature for users to input a list of custom words, names, or jargon to improve transcription accuracy for specialized topics.
--   **Additional Export Formats**: Provide options to download transcriptions in different formats, such as DOCX or SRT for video subtitles.
--   **Team Collaboration**: Introduce a workspace or team feature where multiple users can upload, view, and comment on a shared pool of transcripts.
--   **Internationalization (i18n)**: Translate the application's UI into multiple languages to make it accessible to a global audience.
+- **Real-time Microphone Transcription**: Implement live audio transcription using the device microphone, potentially leveraging the Gemini Live API for real-time, low-latency responses.
+- **User Accounts & History**: Add user authentication (e.g., using Firebase Auth) to allow users to save, view, and manage their transcription history in a database (like Firestore).
+- **Advanced Analytics Dashboard**: Expand the "Insights" panel into a full dashboard with more visualizations, such as word frequency clouds and talk-to-listen ratio analysis.
+- **Video File Support**: Allow users to upload video files, automatically extract the audio track, and transcribe it.
+- **Custom Vocabulary**: Add a feature for users to input a list of custom words, names, or jargon to improve transcription accuracy for specialized topics.
+- **Additional Export Formats**: Provide options to download transcriptions in different formats, such as DOCX or SRT for video subtitles.
+- **Team Collaboration**: Introduce a workspace or team feature where multiple users can upload, view, and comment on a shared pool of transcripts.
+- **Internationalization (i18n)**: Translate the application's UI into multiple languages to make it accessible to a global audience.
 
 ## 🤝 Contributing
 
@@ -101,11 +102,11 @@ Contributions are what make the open-source community such an amazing place to l
 
 If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
 
-1.  Fork the Project
-2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4.  Push to the Branch (`git push origin feature/AmazingFeature`)
-5.  Open a Pull Request
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## 📄 License
 
