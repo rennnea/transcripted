@@ -39,7 +39,7 @@ This document outlines the prioritized feature requests, technical debt, and UX 
 | `T-01` | **High** | **Chatbot Context Awareness** | Ensure the Chatbot utilizes the `ai.caches` API effectively. Currently, there is a fallback to history injection; need to validate TTL handling and expiration UI states. | 🟢 Completed |
 | `T-02` | **Medium** | **Quota Error Handling** | Implement exponential backoff for `429 Too Many Requests` errors from the Gemini API to prevent app crashes during high load. | 🔴 Backlog |
 | `T-03` | **Medium** | **Unit Testing Coverage** | Increase unit test coverage for `geminiService.ts` and `analyticsUtils.ts` to >80%. | 🟢 Completed |
-| `T-04` | **Critical** | **API Key Security (BYOK)** | Refactor the app to remove `process.env.API_KEY` dependency for production builds. Implement a "Settings" modal for users to input their own API key, stored in `localStorage`. | 🔴 Backlog |
+| `T-04` | **Critical** | **API Key Security (BYOK)** | Refactor the app to remove `process.env.[[[YOUR_API_KEY]]` dependency for production builds. Implement a "Settings" modal for users to input their own API key, stored in `localStorage`. | 🔴 Backlog |
 
 ## 4. Completed Items (Log)
 
