@@ -1,8 +1,8 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { HistoryItem } from '../types';
-import { getAllTranscriptions, clearDatabase, TranscriptionRecord } from '../utils/db'; // Use DB
-import { HistoryIcon } from './icons/HistoryIcon';
+import { HistoryIcon } from './common/icons/HistoryIcon';
+import { useHistory } from '../hooks/useHistory';
+import { formatFileSize } from '../utils/fileUtils';
 
 interface HistoryViewProps {
   onSelectItem: (item: HistoryItem) => void;
@@ -10,35 +10,12 @@ interface HistoryViewProps {
 }
 
 const HistoryView: React.FC<HistoryViewProps> = ({ onSelectItem, onReturnToDashboard }) => {
-  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
+  const { historyItems, isLoading, reloadHistory, clearHistory } = useHistory();
   
+  // Reload history when component mounts to ensure fresh data
   useEffect(() => {
-    const loadHistory = async () => {
-        const records = await getAllTranscriptions();
-        // Map DB records to HistoryItems
-        const items: HistoryItem[] = records.map(rec => ({
-            id: rec.id,
-            cacheKey: rec.cacheKey, // Fixed key -> cacheKey to match HistoryItem
-            fileInfo: {
-                name: rec.fileName,
-                size: rec.fileSize,
-                lastModified: rec.lastModified
-            },
-            result: rec.transcriptionData,
-            geminiCacheName: rec.geminiCacheName,
-            geminiCacheExpiry: rec.geminiCacheExpiry
-        }));
-        setHistoryItems(items);
-    };
-    loadHistory();
-  }, []);
-
-  const handleClearHistory = async () => {
-    if (window.confirm('Are you sure you want to clear your entire transcription history? This action cannot be undone.')) {
-      await clearDatabase();
-      setHistoryItems([]);
-    }
-  };
+    reloadHistory();
+  }, [reloadHistory]);
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleString(undefined, {
@@ -46,6 +23,10 @@ const HistoryView: React.FC<HistoryViewProps> = ({ onSelectItem, onReturnToDashb
       timeStyle: 'short',
     });
   };
+
+  if (isLoading) {
+    return <div className="text-center py-12 text-brown-500">Loading history...</div>;
+  }
 
   if (historyItems.length === 0) {
     return (
@@ -68,7 +49,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ onSelectItem, onReturnToDashb
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-brown-800">Transcription History</h2>
         <button
-          onClick={handleClearHistory}
+          onClick={clearHistory}
           className="px-4 py-2 text-sm font-semibold text-red-700 bg-red-100 rounded-lg hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500"
         >
           Clear All History
@@ -76,7 +57,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ onSelectItem, onReturnToDashb
       </div>
       <ul className="space-y-3">
         {historyItems.map(item => (
-          <li key={item.cacheKey || item.id} className="bg-beige-50 border border-beige-200/80 rounded-xl p-4 flex items-center justify-between space-x-4">
+          <li key={item.cacheKey || item.id} className="bg-beige-50 border border-beige-200/80 rounded-xl p-4 flex items-center justify-between space-x-4 hover:border-khaki-300 transition-colors">
             <div className="flex-1 overflow-hidden">
               <div className="flex items-center space-x-2">
                 <p className="font-semibold text-brown-800 truncate" title={item.fileInfo.name}>
@@ -86,9 +67,11 @@ const HistoryView: React.FC<HistoryViewProps> = ({ onSelectItem, onReturnToDashb
                     <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full border border-green-200" title="Cached in Gemini Context">Cached</span>
                 )}
               </div>
-              <p className="text-sm text-brown-500">
-                Transcribed on {formatDate(item.fileInfo.lastModified)}
-              </p>
+              <div className="flex items-center space-x-3 text-sm text-brown-500 mt-1">
+                <span>{formatFileSize(item.fileInfo.size)}</span>
+                <span className="w-1 h-1 rounded-full bg-brown-300"></span>
+                <span>{formatDate(item.fileInfo.lastModified)}</span>
+              </div>
             </div>
             <button
               onClick={() => onSelectItem(item)}

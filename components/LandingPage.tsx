@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { Step1Icon } from './icons/Step1Icon';
-import { Step2Icon } from './icons/Step2Icon';
-import { Step3Icon } from './icons/Step3Icon';
-import AppPreview from './AppPreview';
+import { Step1Icon } from './common/icons/Step1Icon';
+import { Step2Icon } from './common/icons/Step2Icon';
+import { Step3Icon } from './common/icons/Step3Icon';
+import AppPreview from './common/AppPreview';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -14,23 +14,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
     <div className="w-full max-w-7xl mx-auto px-4">
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center min-h-[70vh]">
-        <div className="text-left">
-          <h2 className="text-4xl lg:text-5xl font-bold text-brown-800 mb-6 tracking-tight font-poppins">
+        <div className="text-left animate-fade-in-up">
+          <h2 className="text-4xl lg:text-5xl font-bold text-brown-800 mb-6 tracking-tight font-poppins leading-tight">
             AI-Powered Audio Transcription
           </h2>
-          <p className="max-w-xl text-brown-700 mb-10 text-lg">
+          <p className="max-w-xl text-brown-700 mb-10 text-lg leading-relaxed">
             Effortlessly convert your audio files into accurate, speaker-separated text. Our AI can also generate concise summaries and extract key insights for you.
           </p>
           <div className="flex justify-start">
             <button
               onClick={onGetStarted}
-              className="px-10 py-4 bg-khaki-600 text-white font-bold rounded-xl hover:bg-khaki-700 focus:outline-none focus:ring-4 focus:ring-khaki-300 transition-all duration-300 transform hover:scale-105"
+              className="px-10 py-4 bg-khaki-600 text-white font-bold rounded-xl hover:bg-khaki-700 focus:outline-none focus:ring-4 focus:ring-khaki-300 transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
             >
               Get Started
             </button>
           </div>
         </div>
-        <div className="hidden lg:flex justify-center items-center">
+        <div className="hidden lg:flex justify-center items-center animate-fade-in-up delay-100">
             <AppPreview />
         </div>
       </div>
@@ -38,9 +38,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
       <div className="my-24 text-left">
         <h3 className="text-3xl font-bold text-brown-800 mb-10 font-poppins">How It Works in 3 Easy Steps</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-beige-100 p-6 rounded-2xl border border-beige-200/80 shadow-sm">
+            <div className="bg-beige-100 p-6 rounded-2xl border border-beige-200/80 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-2 group cursor-default">
               <div className="flex items-center space-x-3 mb-3">
-                <div className="bg-khaki-100 p-2 rounded-lg">
+                <div className="bg-khaki-100 p-2 rounded-lg group-hover:bg-khaki-200 transition-colors">
                     <Step1Icon className="w-6 h-6 text-khaki-600" />
                 </div>
                 <h3 className="text-lg font-semibold text-brown-800">Step 1: Upload</h3>
@@ -49,9 +49,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                 Click "Get Started" and upload your audio file. We support a wide range of formats like MP3, WAV, and M4A.
               </p>
             </div>
-            <div className="bg-beige-100 p-6 rounded-2xl border border-beige-200/80 shadow-sm">
+            <div className="bg-beige-100 p-6 rounded-2xl border border-beige-200/80 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-2 group cursor-default">
                 <div className="flex items-center space-x-3 mb-3">
-                    <div className="bg-khaki-100 p-2 rounded-lg">
+                    <div className="bg-khaki-100 p-2 rounded-lg group-hover:bg-khaki-200 transition-colors">
                         <Step2Icon className="w-6 h-6 text-khaki-600" />
                     </div>
                     <h3 className="text-lg font-semibold text-brown-800">Step 2: Configure</h3>
@@ -60,9 +60,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                     Select the audio language and choose to enable speaker identification or an AI-generated summary.
                 </p>
             </div>
-            <div className="bg-beige-100 p-6 rounded-2xl border border-beige-200/80 shadow-sm">
+            <div className="bg-beige-100 p-6 rounded-2xl border border-beige-200/80 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-2 group cursor-default">
                 <div className="flex items-center space-x-3 mb-3">
-                    <div className="bg-khaki-100 p-2 rounded-lg">
+                    <div className="bg-khaki-100 p-2 rounded-lg group-hover:bg-khaki-200 transition-colors">
                         <Step3Icon className="w-6 h-6 text-khaki-600" />
                     </div>
                     <h3 className="text-lg font-semibold text-brown-800">Step 3: Transcribe</h3>

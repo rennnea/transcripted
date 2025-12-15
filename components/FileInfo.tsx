@@ -1,6 +1,6 @@
-
 import React from 'react';
-import { AudioFileIcon } from './icons/AudioFileIcon';
+import { AudioFileIcon } from './common/icons/AudioFileIcon';
+import { formatFileSize } from '../utils/fileUtils';
 
 interface FileInfoProps {
   file: File | null;
@@ -9,8 +9,6 @@ interface FileInfoProps {
 export const FileInfo: React.FC<FileInfoProps> = ({ file }) => {
     if (!file) return null;
 
-    const fileSize = (file.size / (1024 * 1024)).toFixed(2); // in MB
-
     return (
         <div className="space-y-4">
             <h2 className="text-xl font-semibold text-khaki-600">Selected File</h2>
@@ -18,7 +16,7 @@ export const FileInfo: React.FC<FileInfoProps> = ({ file }) => {
                 <AudioFileIcon className="w-10 h-10 text-khaki-500 flex-shrink-0" />
                 <div className="overflow-hidden">
                     <p className="text-brown-800 font-medium truncate" title={file.name}>{file.name}</p>
-                    <p className="text-sm text-brown-500">{fileSize} MB · {file.type}</p>
+                    <p className="text-sm text-brown-500">{formatFileSize(file.size)} · {file.type}</p>
                 </div>
             </div>
         </div>

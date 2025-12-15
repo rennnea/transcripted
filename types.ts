@@ -9,6 +9,7 @@ export interface TranscriptionOptions {
   enableEntityExtraction: boolean;
   enableSentimentAnalysis: boolean;
   enableSearchGrounding: boolean;
+  autoSave: boolean;
 }
 
 export interface TranscriptionSegment {

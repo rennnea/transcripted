@@ -1,13 +1,15 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import { SpeakerDistributionChart } from './charts/SpeakerDistributionChart';
-import { AnalyticsIcon } from './icons/AnalyticsIcon';
-import { SpeakerIcon } from './icons/SpeakerIcon';
+import { AnalyticsIcon } from './common/icons/AnalyticsIcon';
+import { SpeakerIcon } from './common/icons/SpeakerIcon';
 import { TranscriptionResult } from '../types';
-import { LinkIcon } from './icons/LinkIcon';
+import { LinkIcon } from './common/icons/LinkIcon';
 import { calculateSpeakerDistribution, calculateSentimentTrend } from '../utils/analyticsUtils';
 import { SentimentTrendChart } from './charts/SentimentTrendChart';
-import { SentimentTrendIcon } from './icons/SentimentTrendIcon';
+import { SentimentDistributionChart } from './charts/SentimentDistributionChart';
+import { SentimentTrendIcon } from './common/icons/SentimentTrendIcon';
+import { BarChartIcon } from './common/icons/BarChartIcon';
 
 interface InsightsPanelProps {
     transcription: TranscriptionResult | null;
@@ -42,8 +44,6 @@ const InsightsPanel: React.FC<InsightsPanelProps> = ({ transcription, isLoading 
   const sentimentTrendData = useMemo(() => calculateSentimentTrend(transcription?.sentiment?.trend ?? null), [transcription]);
   const groundingSources = useMemo(() => transcription?.sources?.slice(0, 5) ?? [], [transcription]);
 
-  const hasInsights = speakerData.length > 0 || sentimentTrendData.length > 0 || groundingSources.length > 0;
-
   return (
     <aside className="fixed top-0 right-0 h-full w-[380px] bg-white/70 backdrop-blur-2xl border-l border-white/20 p-8 overflow-y-auto transition-transform duration-500 transform translate-x-0 hidden lg:block shadow-[-10px_0_40px_rgba(0,0,0,0.02)]">
       <div className="space-y-8">
@@ -60,12 +60,21 @@ const InsightsPanel: React.FC<InsightsPanelProps> = ({ transcription, isLoading 
             </h3>
             {isLoading ? <SkeletonLoader type="chart" /> : <SpeakerDistributionChart data={speakerData} />}
         </div>
+        
+        {/* Sentiment Distribution (Stacked Bar) */}
+        <div className="bg-white/50 p-5 rounded-2xl border border-white/40 shadow-sm transition-all duration-300 hover:shadow-md">
+            <h3 className="font-semibold text-brown-800 flex items-center space-x-2 mb-4">
+                <BarChartIcon className="w-5 h-5 text-brown-500"/>
+                <span>Sentiment Mix Over Time</span>
+            </h3>
+            {isLoading ? <SkeletonLoader type="chart" /> : <SentimentDistributionChart data={sentimentTrendData} />}
+        </div>
 
         {/* Sentiment Trend */}
         <div className="bg-white/50 p-5 rounded-2xl border border-white/40 shadow-sm transition-all duration-300 hover:shadow-md">
             <h3 className="font-semibold text-brown-800 flex items-center space-x-2 mb-4">
                 <SentimentTrendIcon className="w-5 h-5 text-brown-500"/>
-                <span>Sentiment Trend</span>
+                <span>Sentiment Intensity</span>
             </h3>
             {isLoading ? <SkeletonLoader type="chart" /> : <SentimentTrendChart data={sentimentTrendData} />}
         </div>
@@ -109,4 +118,4 @@ const InsightsPanel: React.FC<InsightsPanelProps> = ({ transcription, isLoading 
   );
 };
 
-export default InsightsPanel;
+export default memo(InsightsPanel);

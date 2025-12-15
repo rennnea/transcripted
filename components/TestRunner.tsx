@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { runAllTests, TestResult, TestSuiteResult } from '../tests/runAllTests';
-import { CheckIcon } from './icons/CheckIcon';
-import { ErrorIcon } from './icons/ErrorIcon';
-import { TestIcon } from './icons/TestIcon';
+import { CheckIcon } from './common/icons/CheckIcon';
+import { ErrorIcon } from './common/icons/ErrorIcon';
+import { TestIcon } from './common/icons/TestIcon';
 
 interface TestRunnerProps {
     onClose: () => void;

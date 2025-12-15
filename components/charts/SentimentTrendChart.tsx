@@ -9,83 +9,162 @@ interface SentimentTrendChartProps {
 export const SentimentTrendChart: React.FC<SentimentTrendChartProps> = ({ data }) => {
     if (!data || data.length === 0) {
         return (
-            <div className="text-center py-8">
-                <p className="text-sm text-brown-500">Sentiment trend data not available.</p>
-                <p className="text-xs text-brown-500/70 mt-1">Enable "Sentiment Analysis" for this insight.</p>
+            <div className="text-center py-8 border border-dashed border-brown-200 rounded-xl bg-beige-50/50">
+                <p className="text-sm text-brown-500 font-medium">No trend data available</p>
+                <p className="text-xs text-brown-400 mt-1">Enable sentiment analysis to see the emotional arc.</p>
             </div>
         );
     }
     
+    // Map data to values
     const sentimentMap = { 'Positive': 1, 'Neutral': 0, 'Negative': -1 };
     const chartData = data.map(point => ({
-        name: `Seg. ${point.segment}`,
+        name: `Seg ${point.segment}`,
         value: sentimentMap[point.sentiment] ?? 0,
+        original: point.sentiment,
+        segment: point.segment
     }));
 
-    const width = 290;
-    const height = 120;
-    const padding = { top: 15, right: 10, bottom: 25, left: 10 };
+    // SVG Dimensions
+    const width = 300;
+    const height = 140;
+    const padding = { top: 20, right: 15, bottom: 30, left: 30 };
+    const contentHeight = height - padding.top - padding.bottom;
+    const contentWidth = width - padding.left - padding.right;
 
+    // Scaling Functions
     const x = (index: number) => {
-        if (chartData.length === 1) {
-            return padding.left + (width - padding.left - padding.right) / 2;
-        }
-        return padding.left + (index / (chartData.length - 1)) * (width - padding.left - padding.right);
+        if (chartData.length === 1) return padding.left + contentWidth / 2;
+        return padding.left + (index / (chartData.length - 1)) * contentWidth;
     };
-    const y = (value: number) => padding.top + ((1 - value) / 2) * (height - padding.top - padding.bottom);
+    
+    // Invert Y because SVG 0 is top
+    const y = (value: number) => {
+        // value is -1 to 1. 
+        // 1 maps to padding.top
+        // -1 maps to height - padding.bottom
+        return padding.top + ((1 - value) / 2) * contentHeight;
+    };
 
+    // Path Generation
     const pathData = chartData.map((point, index) => {
         const command = index === 0 ? 'M' : 'L';
         return `${command} ${x(index)} ${y(point.value)}`;
     }).join(' ');
-    
-    const sentimentColors: { [key: number]: string } = {
-        '1': 'stroke-green-500 fill-green-500',
-        '0': 'stroke-yellow-500 fill-yellow-500',
-        '-1': 'stroke-red-500 fill-red-500',
+
+    // Geyser Palette Colors (Teal -> Sand -> Terracotta)
+    // Matches the "Organic" theme of the app better than standard Red/Green
+    const colors = {
+        positive: '#35978f', // Muted Teal
+        neutral:  '#999999', // Warm Grey
+        negative: '#bf812d'  // Earthy Terracotta
+    };
+
+    const getColor = (val: number) => {
+        if (val === 1) return colors.positive;
+        if (val === -1) return colors.negative;
+        return colors.neutral;
     };
 
     return (
-        <div className="relative">
-            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" aria-label="Sentiment Trend Chart">
+        <div className="relative w-full h-full font-sans">
+            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible" aria-label="Sentiment Trend Chart">
                 <defs>
-                    <linearGradient id="sentimentGradient" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="#d2f2d2" />
-                        <stop offset="50%" stopColor="#fefce8" />
-                        <stop offset="100%" stopColor="#fee2e2" />
+                    {/* Geyser Gradient for the Line Stroke */}
+                    <linearGradient id="geyserStroke" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor={colors.positive} />
+                        <stop offset="50%" stopColor={colors.neutral} stopOpacity="0.5" />
+                        <stop offset="100%" stopColor={colors.negative} />
+                    </linearGradient>
+                    
+                    {/* Subtle Area Fill */}
+                    <linearGradient id="areaFill" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor={colors.positive} stopOpacity="0.1" />
+                        <stop offset="100%" stopColor={colors.negative} stopOpacity="0.1" />
                     </linearGradient>
                 </defs>
 
-                {/* Background Gradient */}
-                <rect x={padding.left} y={padding.top} width={width - padding.left - padding.right} height={height - padding.top - padding.bottom} fill="url(#sentimentGradient)" opacity="0.4" />
-
-                {/* Y-Axis Labels */}
-                <text x="0" y={y(1) + 4} className="text-[10px] fill-green-700 font-medium" aria-label="Positive sentiment line">Pos</text>
-                <text x="0" y={y(0) + 4} className="text-[10px] fill-yellow-700 font-medium" aria-label="Neutral sentiment line">Neu</text>
-                <text x="0" y={y(-1) + 4} className="text-[10px] fill-red-700 font-medium" aria-label="Negative sentiment line">Neg</text>
+                {/* --- SEABORN WHITEBOARD STYLE: Background & Grid --- */}
                 
-                {/* Grid Lines */}
-                <line x1={padding.left} y1={y(1)} x2={width - padding.right} y2={y(1)} className="stroke-green-200" strokeWidth="0.5" strokeDasharray="2 2" />
-                <line x1={padding.left} y1={y(0)} x2={width - padding.right} y2={y(0)} className="stroke-yellow-200" strokeWidth="0.5" strokeDasharray="2 2" />
-                <line x1={padding.left} y1={y(-1)} x2={width - padding.right} y2={y(-1)} className="stroke-red-200" strokeWidth="0.5" strokeDasharray="2 2" />
+                {/* Clean White Background */}
+                <rect x="0" y="0" width={width} height={height} fill="white" fillOpacity="0.5" rx="8" />
 
-                {/* Line Path */}
-                {chartData.length > 1 && <path d={pathData} fill="none" className="stroke-khaki-700/80" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />}
+                {/* Horizontal Grid Lines (Whiteboard style) */}
+                <g className="stroke-gray-200" strokeWidth="1" strokeDasharray="0">
+                    <line x1={padding.left} y1={y(1)} x2={width - padding.right} y2={y(1)} />
+                    <line x1={padding.left} y1={y(0)} x2={width - padding.right} y2={y(0)} />
+                    <line x1={padding.left} y1={y(-1)} x2={width - padding.right} y2={y(-1)} />
+                </g>
+
+                {/* Y-Axis Text Labels (Clean Sans-Serif) */}
+                <g className="text-[10px] font-medium font-inter" textAnchor="end">
+                    <text x={padding.left - 6} y={y(1) + 3} fill={colors.positive}>Pos</text>
+                    <text x={padding.left - 6} y={y(0) + 3} fill={colors.neutral}>Neu</text>
+                    <text x={padding.left - 6} y={y(-1) + 3} fill={colors.negative}>Neg</text>
+                </g>
+
+                {/* --- DATA VISUALIZATION --- */}
+
+                {/* Area Fill (Optional, adds visual weight) */}
+                {chartData.length > 1 && (
+                    <path 
+                        d={`${pathData} L ${x(chartData.length - 1)} ${y(-1.2)} L ${x(0)} ${y(-1.2)} Z`} 
+                        fill="url(#areaFill)" 
+                        stroke="none" 
+                    />
+                )}
+
+                {/* The Trend Line */}
+                {chartData.length > 1 && (
+                    <path 
+                        d={pathData} 
+                        fill="none" 
+                        stroke="url(#geyserStroke)" 
+                        strokeWidth="3" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        className="drop-shadow-sm"
+                    />
+                )}
                 
-                {/* Data Points */}
+                {/* Data Points (Interactive Hover) */}
                 {chartData.map((point, index) => (
                     <g key={index} className="group" transform={`translate(${x(index)}, ${y(point.value)})`}>
-                         <circle r="6" className="fill-transparent" />
-                         <circle r="3.5" className={`${sentimentColors[point.value] || 'stroke-gray-500 fill-gray-500'} transition-transform duration-200 group-hover:r-5`} />
+                         {/* Hit area for easier hovering */}
+                         <circle r="12" fill="transparent" className="cursor-pointer" />
+                         
+                         {/* Visible Dot */}
+                         <circle 
+                            r="4" 
+                            fill="white" 
+                            stroke={getColor(point.value)} 
+                            strokeWidth="2"
+                            className="transition-all duration-200 group-hover:r-6 group-hover:stroke-width-3" 
+                         />
+                         
+                         {/* Tooltip on Hover */}
+                         <g className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                            <rect x="-25" y="-32" width="50" height="20" rx="4" fill="#333" />
+                            <text x="0" y="-19" textAnchor="middle" fill="white" className="text-[10px] font-bold">
+                                {point.original}
+                            </text>
+                             {/* Triangle pointer */}
+                             <path d="M -4 -12 L 4 -12 L 0 -8 Z" fill="#333" />
+                         </g>
                     </g>
                 ))}
 
-                {/* X-Axis Labels */}
-                {chartData.map((point, index) => (
-                     <text key={index} x={x(index)} y={height - 8} textAnchor="middle" className="text-[9px] fill-brown-500 font-semibold">
-                        {point.name}
-                    </text>
-                ))}
+                {/* X-Axis Labels (Only show start and end if too many points) */}
+                {chartData.map((point, index) => {
+                    // Show all labels if less than 8 points, otherwise show every 3rd point
+                    if (chartData.length > 8 && index % Math.ceil(chartData.length / 5) !== 0 && index !== chartData.length - 1) return null;
+                    
+                    return (
+                        <text key={index} x={x(index)} y={height - 10} textAnchor="middle" className="text-[9px] fill-gray-400 font-medium">
+                            {point.segment}
+                        </text>
+                    );
+                })}
             </svg>
         </div>
     );

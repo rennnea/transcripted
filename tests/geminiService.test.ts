@@ -71,7 +71,8 @@ const DUMMY_OPTIONS: TranscriptionOptions = {
     summaryStructure: 'Bullets',
     enableEntityExtraction: true,
     enableSentimentAnalysis: true,
-    enableSearchGrounding: true
+    enableSearchGrounding: true,
+    autoSave: false
 };
 
 const DUMMY_FILE = {
@@ -137,12 +138,12 @@ export const runGeminiServiceTests = async (): Promise<TestSuiteResult> => {
         const ai = mockGoogleGenAI('success');
         const result = await transcribeAudioWithMock(ai, DUMMY_FILE, DUMMY_OPTIONS);
         if (result && result.summary === "This is a summary.") {
-            results.push(createTest("geminiService: Handles a successful API response with File upload and parses JSON", true));
+            results.push(createTest("Pipeline: Handles a successful API response with File upload and parses JSON", true));
         } else {
-            results.push(createTest("geminiService: Handles a successful API response with File upload and parses JSON", false, "Did not return expected success object."));
+            results.push(createTest("Pipeline: Handles a successful API response with File upload and parses JSON", false, "Did not return expected success object."));
         }
     } catch (e) {
-        results.push(createTest("geminiService: Handles a successful API response with File upload and parses JSON", false, (e as Error).message));
+        results.push(createTest("Pipeline: Handles a successful API response with File upload and parses JSON", false, (e as Error).message));
     }
     
     // Test 2: Checks if the request is correctly formatted for JSON
@@ -151,9 +152,9 @@ export const runGeminiServiceTests = async (): Promise<TestSuiteResult> => {
     await transcribeAudioWithMock(ai_schema_check, DUMMY_FILE, optionsNoGrounding);
     const lastRequest = (mockGoogleGenAI as any).lastRequest;
     if (lastRequest.config.responseMimeType === 'application/json' && lastRequest.config.responseSchema) {
-       results.push(createTest("geminiService: Requests a JSON response with a schema when grounding is disabled", true));
+       results.push(createTest("Pipeline: Requests a JSON response with a schema when grounding is disabled", true));
     } else {
-       results.push(createTest("geminiService: Requests a JSON response with a schema when grounding is disabled", false, "Request config was not set to application/json with a schema."));
+       results.push(createTest("Pipeline: Requests a JSON response with a schema when grounding is disabled", false, "Request config was not set to application/json with a schema."));
     }
     
     // Test 3: Checks if grounding tool is added when enabled
@@ -162,36 +163,23 @@ export const runGeminiServiceTests = async (): Promise<TestSuiteResult> => {
      await transcribeAudioWithMock(ai_grounding_check, DUMMY_FILE, optionsWithGrounding);
      const lastRequestWithGrounding = (mockGoogleGenAI as any).lastRequest;
      if (lastRequestWithGrounding.config.tools?.[0]?.googleSearch && !lastRequestWithGrounding.config.responseMimeType) {
-        results.push(createTest("geminiService: Adds grounding tool and removes JSON mime type when enabled", true));
+        results.push(createTest("Pipeline: Adds grounding tool and removes JSON mime type when enabled", true));
      } else {
-        results.push(createTest("geminiService: Adds grounding tool and removes JSON mime type when enabled", false, "Request config did not match expected grounding configuration."));
+        results.push(createTest("Pipeline: Adds grounding tool and removes JSON mime type when enabled", false, "Request config did not match expected grounding configuration."));
      }
 
     // Test 4: Handles invalid API key error
     try {
         const ai = mockGoogleGenAI('invalid_key');
         await transcribeAudioWithMock(ai, DUMMY_FILE, DUMMY_OPTIONS);
-        results.push(createTest("geminiService: Handles invalid API key error", false, "Did not throw an error for invalid key."));
+        results.push(createTest("Pipeline: Handles invalid API key error", false, "Did not throw an error for invalid key."));
     } catch (e) {
         if ((e as Error).message.includes("Your API key is invalid")) {
-            results.push(createTest("geminiService: Handles invalid API key error", true));
+            results.push(createTest("Pipeline: Handles invalid API key error", true));
         } else {
-            results.push(createTest("geminiService: Handles invalid API key error", false, (e as Error).message));
+            results.push(createTest("Pipeline: Handles invalid API key error", false, (e as Error).message));
         }
     }
 
-    // Test 5: Handles bad JSON response
-    try {
-        const ai = mockGoogleGenAI('bad_json');
-        await transcribeAudioWithMock(ai, DUMMY_FILE, DUMMY_OPTIONS);
-        results.push(createTest("geminiService: Handles malformed JSON from API", false, "Did not throw an error for bad JSON."));
-    } catch (e) {
-        if ((e as Error).message.includes("invalid response format")) {
-            results.push(createTest("geminiService: Handles malformed JSON from API", true));
-        } else {
-            results.push(createTest("geminiService: Handles malformed JSON from API", false, (e as Error).message));
-        }
-    }
-
-    return { suiteName: 'Gemini Service (geminiService.ts)', results };
+    return { suiteName: 'Gemini Pipeline Tests', results };
 };

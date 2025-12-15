@@ -15,10 +15,13 @@ TranscriptedAI is a modern web application that leverages the power of the Googl
 - **Factual Grounding**: Optionally enable Google Search integration to ground the summary in up-to-date, factual information, complete with source citations.
 - **Insightful Analytics**:
     - **Entity Extraction**: Automatically identifies and categorizes key entities like people, organizations, and locations.
-    - **Sentiment Analysis**: Determines the overall emotional tone of the conversation (Positive, Negative, Neutral).
+    - **Sentiment Analysis**: Determines the overall emotional tone of the conversation.
+    - **Visual Data**: Interactive charts showing sentiment distribution over time and speaker dominance.
+- **Sentiment Lab**: An experimental, interactive playground for real-time text analysis visualization.
 - **Interactive Insights Panel**: Visualize speaker contribution and review grounding sources in a dedicated side panel.
 - **Transcription Editor**: Easily edit and refine the generated transcript directly within the app.
-- **Download & Copy**: Export the final transcription as a `.txt` file or copy it to your clipboard with a single click.
+- **Export Options**: Download the final transcription as a `.txt` file or generate a professional **PDF report** containing the summary, insights, and full text.
+- **Auto-Save History**: Automatically saves your transcription sessions to the local browser database, ensuring you never lose your work.
 - **Responsive Design**: A beautiful and functional interface that works seamlessly on both desktop and mobile devices.
 - **Session Caching**: Transcriptions are cached in the browser's session storage to prevent re-processing the same file and settings.
 
@@ -26,6 +29,7 @@ TranscriptedAI is a modern web application that leverages the power of the Googl
 
 - **Frontend**: [React](https://react.dev/) with [TypeScript](https://www.typescriptlang.org/)
 - **AI Model**: [Google Gemini API](https://ai.google.dev/) (`@google/genai`)
+- **Visualization**: [D3.js](https://d3js.org/) for complex data charts.
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **Build/Dev Environment**: Vite-like setup using native ES Modules and an import map.
 
@@ -59,13 +63,14 @@ The codebase is organized to be clean and maintainable:
 ```
 /
 ├── components/             # Reusable React components
-│   ├── charts/             # Chart components for analytics
+│   ├── charts/             # Chart components for analytics (D3.js integration)
 │   ├── icons/              # SVG icon components
 │   ├── AppPreview.tsx      # Landing page UI preview
 │   ├── FileUploader.tsx    # Drag-and-drop file input
 │   ├── InsightsPanel.tsx   # Side panel for analytics
 │   ├── LandingPage.tsx     # The initial page for new users
 │   ├── ProgressIndicator.tsx # Staged loading screen
+│   ├── SentimentLab.tsx    # Real-time sentiment analysis playground
 │   └── ...
 ├── services/               # Modules for external API calls
 │   └── geminiService.ts    # Logic for interacting with the Gemini API
@@ -83,10 +88,10 @@ This project has a strong foundation, but there are many exciting features that 
 
 -   **Real-time Microphone Transcription**: Implement live audio transcription using the device microphone, potentially leveraging the Gemini Live API for real-time, low-latency responses.
 -   **User Accounts & History**: Add user authentication (e.g., using Firebase Auth) to allow users to save, view, and manage their transcription history in a database (like Firestore).
--   **Advanced Analytics Dashboard**: Expand the "Insights" panel into a full dashboard with more visualizations, such as sentiment trends over time, word frequency clouds, and talk-to-listen ratio analysis.
+-   **Advanced Analytics Dashboard**: Expand the "Insights" panel into a full dashboard with more visualizations, such as word frequency clouds and talk-to-listen ratio analysis.
 -   **Video File Support**: Allow users to upload video files, automatically extract the audio track, and transcribe it.
 -   **Custom Vocabulary**: Add a feature for users to input a list of custom words, names, or jargon to improve transcription accuracy for specialized topics.
--   **Additional Export Formats**: Provide options to download transcriptions in different formats, such as PDF, DOCX, or SRT for video subtitles.
+-   **Additional Export Formats**: Provide options to download transcriptions in different formats, such as DOCX or SRT for video subtitles.
 -   **Team Collaboration**: Introduce a workspace or team feature where multiple users can upload, view, and comment on a shared pool of transcripts.
 -   **Internationalization (i18n)**: Translate the application's UI into multiple languages to make it accessible to a global audience.
 

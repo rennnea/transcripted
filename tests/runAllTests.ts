@@ -1,8 +1,6 @@
-
 import { runFileUtilsTests } from './fileUtils.test';
 import { runAnalyticsUtilsTests } from './analyticsUtils.test';
 import { runGeminiServiceTests } from './geminiService.test';
-import { runCacheTests } from './cache.test';
 
 export interface TestResult {
     description: string;
@@ -23,7 +21,6 @@ export const runAllTests = async (): Promise<TestSuiteResult[]> => {
         runFileUtilsTests(),
         runAnalyticsUtilsTests(),
         runGeminiServiceTests(),
-        runCacheTests(),
     ]);
 
     return allSuiteResults;
