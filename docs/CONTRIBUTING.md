@@ -6,12 +6,12 @@ Thank you for your interest in contributing to TranscriptedAI! This document out
 
 ### Prerequisites
 *   **Node.js**: v18.x or higher.
-*   **API Key**: A valid Google Gemini API Key set in your environment as `API_KEY`.
+*   **API Key**: A valid Google Gemini API Key set in your environment as `[[YOUR_API_KEY]]`.
 
 ### Setup
 1.  Clone the repository.
 2.  Install dependencies (if using a local setup).
-3.  Ensure `process.env.API_KEY` is available in your build context.
+3.  Ensure `process.env.[[YOUR_API_KEY]]` is available in your build context.
 
 ---
 
@@ -21,7 +21,7 @@ This project relies on `@google/genai`. Developers **MUST** adhere to the follow
 
 ### Initialization
 *   **Always** import from `@google/genai`.
-*   **Always** initialize using the named parameter: `new GoogleGenAI({ apiKey: process.env.API_KEY })`.
+*   **Always** initialize using the named parameter: `new GoogleGenAI({ apiKey: process.env.[[YOUR_API_KEY]] })`.
 *   **Never** hardcode API keys or request them via UI input fields (until BYOK is implemented).
 
 ### Model Selection
