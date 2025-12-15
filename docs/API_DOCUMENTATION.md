@@ -15,11 +15,11 @@ The service utilizes a **Progressive Two-Stage Pipeline** to optimize user exper
 
 The service requires a valid **Google Gemini API Key**.
 
-- **Configuration:** The key is loaded via the environment variable `process.env.API_KEY`.
+- **Configuration:** The key is loaded via the environment variable `process.env.[[YOUR_API_KEY]]`.
 - **Client Initialization:** The `@google/genai` client is initialized as a singleton within the service module.
 
 ```typescript
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.[[YOUR_API_KEY]];
 ```
 
 > **Security Note:** In the current client-side architecture, the API key is embedded in the build. For production deployment, keys should be proxied through a backend or input by the user via a "Bring Your Own Key" (BYOK) interface.
@@ -161,7 +161,7 @@ async function handleUpload(file: File) {
 The service layer throws standard JavaScript `Error` objects. Frontend components should wrap calls in `try/catch` blocks.
 
 **Common Errors:**
-- `API_KEY environment variable is not set`: Configuration error.
+- `[[YOUR API]] environment variable is not set`: Configuration error.
 - `Failed to upload file`: Network connectivity issues or file type validation failure.
 - `429 Too Many Requests`: Quota limits reached on the API key.
 - `400 Bad Request`: Often caused by malformed audio or unsupported codecs.
