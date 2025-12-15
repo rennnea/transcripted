@@ -19,7 +19,7 @@ There is no intermediate Node.js backend server required for operation, making i
 The application relies on the Google Gemini API Key. In the code, this is accessed via:
 
 ```typescript
-const API_KEY = process.env.API_KEY;
+const API_KEY = process.env.[[YOUR_API_KEY]];
 ```
 
 ### Handling Secrets in Production
@@ -47,7 +47,7 @@ npm run build
 
 This command will:
 1.  Compile `src` files.
-2.  Replace `process.env.API_KEY` with the actual value provided in your build environment.
+2.  Replace `process.env.[[YOUR_API_KEY]]` with the actual value provided in your build environment.
 3.  Minify assets.
 4.  Output files to the `dist/` or `build/` directory.
 
@@ -65,7 +65,7 @@ Vercel provides excellent support for SPAs and environment variable injection.
     *   **Framework Preset:** Vite
     *   **Root Directory:** `./`
 4.  **Environment Variables:**
-    *   Add `API_KEY` with your Google Gemini API key value.
+    *   Add `[[YOUR_API_KEY]]` with your Google Gemini API key value.
 5.  **Deploy.**
 
 ### Option B: Netlify
@@ -76,7 +76,7 @@ Vercel provides excellent support for SPAs and environment variable injection.
     *   **Publish Directory:** `dist`
 3.  **Environment Variables:**
     *   Go to **Site Settings > Build & Deploy > Environment**.
-    *   Add `API_KEY`.
+    *   Add `[[YOUR_API_KEY]]`.
 4.  **Deploy Site.**
 
 ### Option C: Firebase Hosting
