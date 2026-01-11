@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import Header from './components/layout/Header';
 import FileUploader from './components/FileUploader';
 import TranscriptionDisplay from './components/TranscriptionDisplay';
@@ -12,16 +13,25 @@ import TestRunner from './components/TestRunner';
 import HistoryView from './components/HistoryView';
 import Chatbot from './components/Chatbot';
 import SentimentLab from './components/SentimentLab';
+import GlobalSearchView from './components/GlobalSearchView';
 import { StatusPill } from './components/common/StatusPill';
 import { useGeminiPipeline } from './hooks/useGeminiPipeline';
 import { getAudioDuration } from './utils/fileUtils';
 
 const App: React.FC = () => {
-  const [appState, setAppState] = useState<'landing' | 'upload' | 'transcribing' | 'result' | 'history' | 'chatbot' | 'sentiment-lab'>('landing');
+  const [appState, setAppState] = useState<'landing' | 'upload' | 'transcribing' | 'result' | 'history' | 'chatbot' | 'sentiment-lab' | 'global-search'>('landing');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [estimatedTokens, setEstimatedTokens] = useState<number | null>(null);
   const [showTestRunner, setShowTestRunner] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme');
+      return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+    return false;
+  });
 
   // Settings State
   const [language, setLanguage] = useState('en-US');
@@ -34,6 +44,17 @@ const App: React.FC = () => {
   const [summaryDetail, setSummaryDetail] = useState('Detailed');
   const [summaryStructure, setSummaryStructure] = useState('Bullets');
   const [autoSaveHistory, setAutoSaveHistory] = useState(true);
+
+  // Apply Dark Mode Class
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
 
   // Logic extracted to hook
   const { 
@@ -70,7 +91,7 @@ const App: React.FC = () => {
   };
   
   const handleShowDashboard = () => {
-    if (appState === 'chatbot' || appState === 'sentiment-lab') {
+    if (appState === 'chatbot' || appState === 'sentiment-lab' || appState === 'global-search') {
         setAppState(transcriptionResult ? 'result' : 'upload');
     } else {
         handleClear();
@@ -84,6 +105,13 @@ const App: React.FC = () => {
       if (transcriptionResult) {
           setAppState('chatbot');
       }
+  };
+
+  const handleSearch = (query: string) => {
+    if (query.trim()) {
+      setSearchQuery(query);
+      setAppState('global-search');
+    }
   };
 
   const handleSelectHistoryItem = (item: HistoryItem) => {
@@ -125,8 +153,8 @@ const App: React.FC = () => {
   };
 
   const renderContent = () => {
-    const mainContentContainer = (children: React.ReactNode) => (
-      <div className="w-full max-w-4xl mx-auto bg-white/60 backdrop-blur-md border border-white/40 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-10 transition-all duration-500">
+    const mainContentContainer = (children: React.ReactNode, fullWidth = false) => (
+      <div className={`${fullWidth ? 'w-full max-w-7xl' : 'w-full max-w-4xl'} mx-auto bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md border border-white/40 dark:border-white/10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.4)] p-6 md:p-10 transition-all duration-500`}>
         {children}
       </div>
     );
@@ -143,8 +171,14 @@ const App: React.FC = () => {
             onReturnToDashboard={handleClear}
           />
         );
+      case 'global-search':
+        return mainContentContainer(
+          <GlobalSearchView 
+            query={searchQuery}
+            onSelectItem={handleSelectHistoryItem}
+          />, true
+        );
       case 'sentiment-lab':
-        // The lab takes over the full content area with its own background
         return <SentimentLab />;
       case 'chatbot':
         return transcriptionResult ? (
@@ -160,13 +194,13 @@ const App: React.FC = () => {
         if (appState === 'transcribing' && !isLoading && !transcriptionResult) {
              return (
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 w-full max-w-7xl mx-auto animate-fade-in-up">
-                <div className="lg:col-span-3 flex flex-col justify-center bg-white/60 backdrop-blur-md border border-white/40 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8">
+                <div className="lg:col-span-3 flex flex-col justify-center bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md border border-white/40 dark:border-white/10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.4)] p-8">
                   <FileInfo file={audioFile} />
                    <div className="flex flex-col sm:flex-row justify-start mt-8 space-y-3 sm:space-y-0 sm:space-x-4">
                       <button onClick={handleTranscribe} disabled={isLoading} className="w-full sm:w-auto px-8 py-3 bg-khaki-600 text-white font-bold rounded-xl hover:bg-khaki-700 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-khaki-300 transition-all duration-300 disabled:bg-brown-400 disabled:cursor-not-allowed disabled:transform-none">
                         Transcribe Audio
                       </button>
-                      <button onClick={handleClear} className="w-full sm:w-auto px-8 py-3 bg-beige-200/50 text-brown-700 font-bold rounded-xl hover:bg-beige-200 focus:outline-none focus:ring-4 focus:ring-beige-200 transition-all duration-300">
+                      <button onClick={handleClear} className="w-full sm:w-auto px-8 py-3 bg-beige-200/50 dark:bg-zinc-800 text-brown-700 dark:text-zinc-300 font-bold rounded-xl hover:bg-beige-200 dark:hover:bg-zinc-700 focus:outline-none focus:ring-4 focus:ring-beige-200 transition-all duration-300">
                         Change File
                       </button>
                     </div>
@@ -208,13 +242,12 @@ const App: React.FC = () => {
     }
   }
 
-  // Remove padding/margins for the lab view to allow full-screen effect
   const mainClasses = appState === 'sentiment-lab' 
     ? 'flex-1 overflow-x-hidden overflow-y-auto' 
     : `flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8 transition-all duration-500 ${appState === 'result' && transcriptionResult ? 'lg:mr-[380px]' : ''}`;
 
   return (
-    <div className="flex h-screen bg-[#FDFBF7] text-brown-800 font-sans selection:bg-khaki-200">
+    <div className="flex h-screen bg-[#FDFBF7] dark:bg-zinc-950 text-brown-800 dark:text-zinc-100 font-sans selection:bg-khaki-200 transition-colors duration-500">
       <Sidebar 
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)}
@@ -228,7 +261,12 @@ const App: React.FC = () => {
         isResultAvailable={!!transcriptionResult}
       />
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        <Header onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
+        <Header 
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
+          isDarkMode={isDarkMode} 
+          onToggleTheme={() => setIsDarkMode(!isDarkMode)} 
+          onSearch={handleSearch}
+        />
         <main className={mainClasses}>
           {renderContent()}
         </main>

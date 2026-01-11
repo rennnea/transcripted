@@ -1,6 +1,6 @@
 
 import Dexie, { Table } from 'dexie';
-import { TranscriptionResult } from '../types';
+import { TranscriptionResult, SemanticIndex } from '../types';
 
 export interface TranscriptionRecord {
   id?: number;
@@ -8,6 +8,7 @@ export interface TranscriptionRecord {
   fileSize: number;
   lastModified: number;
   transcriptionData: TranscriptionResult;
+  semanticIndex?: SemanticIndex;
   cacheKey: string;
   createdAt: number;
   geminiCacheName?: string;
@@ -39,6 +40,7 @@ export const saveTranscription = async (
     fileSize: file.size,
     lastModified: file.lastModified,
     transcriptionData: data,
+    semanticIndex: data.semanticIndex,
     cacheKey,
     createdAt: Date.now(),
     geminiCacheName: cacheName,

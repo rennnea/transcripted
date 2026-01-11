@@ -23,6 +23,13 @@ export interface SentimentTrendPoint {
   sentiment: 'Positive' | 'Negative' | 'Neutral';
 }
 
+// Semantic data for the Global Library Search
+export interface SemanticIndex {
+  themes: string[];
+  keywords: string[];
+  searchSummary: string;
+}
+
 // Stage 1 Output: Pure Data
 export interface RawTranscriptionData {
   transcription: TranscriptionSegment[];
@@ -40,7 +47,9 @@ export interface AnalysisData {
 }
 
 // Combined Result stored in DB and used in UI
-export interface TranscriptionResult extends RawTranscriptionData, AnalysisData {}
+export interface TranscriptionResult extends RawTranscriptionData, AnalysisData {
+  semanticIndex?: SemanticIndex;
+}
 
 export interface HistoryItem {
   id?: number;

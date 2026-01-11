@@ -5,6 +5,25 @@ All notable changes to **TranscriptedAI** will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2025-06-25
+
+### Added
+- **Global Library Search:** Implemented `GlobalSearchView.tsx`, a new feature allowing users to perform semantic searches across their entire transcription history.
+- **Semantic Indexing:** The processing pipeline now includes an `indexStep` that uses `gemini-2.5-flash` to generate themes, keywords, and a search-optimized summary for each transcript, powering the Global Search.
+- **Dark Mode:** Added a full, application-wide dark theme. The theme is toggled via a new button in the header and persists in local storage.
+
+### Changed
+- **Major UI/UX Overhaul:** Refactored nearly all components for a more polished, accessible, and visually harmonious user experience. This includes improved spacing, larger touch targets, better color contrast in both light and dark modes, and refined typography.
+- **Responsive Sidebar:** The main navigation sidebar (`Sidebar.tsx`) has been completely rebuilt to be fully responsive, functioning as an overlay on mobile devices.
+- **Service Architecture Refactor:** Deprecated the monolithic `geminiService.ts` in favor of a modular, feature-sliced architecture under `services/gemini/`. Logic is now separated into `orchestrator.ts`, `api.ts`, `client.ts`, and `prompts.ts`.
+- **Header Component:** Upgraded the `Header.tsx` to include the dark mode toggle and a functional search input that triggers the Global Search view.
+
+### Fixed
+- Various accessibility issues related to button sizes and color contrast.
+- Corrected several minor layout inconsistencies on different screen sizes.
+
+---
+
 ## [1.4.0] - 2025-06-10
 
 ### Added

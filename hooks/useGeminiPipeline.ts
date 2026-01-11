@@ -47,7 +47,6 @@ export const useGeminiPipeline = () => {
         try {
             const cachedRecord = await getTranscription(cacheKey);
             if (cachedRecord) {
-                console.log("Loading from cache");
                 setProgress({ stage: 'Loading from cache...', percentage: 100 });
                 setTimeout(() => {
                     setResult(cachedRecord.transcriptionData);
@@ -68,7 +67,7 @@ export const useGeminiPipeline = () => {
             const duration = await getAudioDuration(file);
             stopProgressSimulation = simulateTranscriptionProgress(duration, setProgress);
 
-            const { initialResult, analysisPromise, cachePromise } = await processAudioPipeline(file, options);
+            const { initialResult, analysisPromise, indexPromise, cachePromise } = await processAudioPipeline(file, options);
 
             if (stopProgressSimulation) stopProgressSimulation();
             setProgress({ stage: 'Rendering text...', percentage: 100 });
@@ -86,11 +85,16 @@ export const useGeminiPipeline = () => {
             setIsAnalyzing(true);
 
             // Wait for background tasks
-            const [analysisData, cacheData] = await Promise.all([analysisPromise, cachePromise]);
+            const [analysisData, semanticIndex, cacheData] = await Promise.all([
+                analysisPromise, 
+                indexPromise, 
+                cachePromise
+            ]);
 
             const finalResult: TranscriptionResult = {
                 ...initialResult,
-                ...analysisData
+                ...analysisData,
+                semanticIndex // Include the searchable index
             };
 
             setResult(finalResult);
@@ -103,7 +107,6 @@ export const useGeminiPipeline = () => {
 
         } catch (err) {
             if (stopProgressSimulation) stopProgressSimulation();
-            console.error(err);
             setError(err instanceof Error ? err.message : "An unknown error occurred.");
             setIsLoading(false);
             setIsAnalyzing(false);

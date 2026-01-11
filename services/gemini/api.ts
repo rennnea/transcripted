@@ -1,3 +1,5 @@
+
+import { Type } from "@google/genai";
 import { ai } from "./client";
 import { 
     transcriptionSchema, 
@@ -6,7 +8,7 @@ import {
     getAnalysisPrompt,
     getCacheSystemInstruction
 } from "./prompts";
-import { TranscriptionOptions, RawTranscriptionData, AnalysisData } from "../../types";
+import { TranscriptionOptions, RawTranscriptionData, AnalysisData, SemanticIndex } from "../../types";
 
 // Helper to clean markdown from JSON
 export const cleanJsonResponse = (text: string): string => {
@@ -74,7 +76,6 @@ export const analyzeStep = async (transcriptionText: string, options: Transcript
 
     if (options.enableSearchGrounding) {
         config.tools = [{ googleSearch: {} }];
-        // Note: responseMimeType/responseSchema are NOT allowed with googleSearch
     } else {
         config.responseMimeType = "application/json";
         config.responseSchema = analysisSchema;
@@ -106,6 +107,43 @@ export const analyzeStep = async (transcriptionText: string, options: Transcript
     }
 };
 
+// Generate a searchable semantic index for the knowledge library
+export const indexStep = async (transcriptionText: string): Promise<SemanticIndex> => {
+    console.log("Generating Semantic Search Index...");
+    const prompt = `Analyze this transcription and provide a JSON object for a search index. 
+    Include: 
+    1. 'themes' (array of strings, e.g., ["budget", "marketing strategy"])
+    2. 'keywords' (array of specific terms)
+    3. 'searchSummary' (3-sentence technical summary for quick retrieval)
+    
+    TRANSCRIPT:
+    ${transcriptionText.substring(0, 30000)}`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [{ parts: [{ text: prompt }] }],
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        themes: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        keywords: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        searchSummary: { type: Type.STRING }
+                    },
+                    required: ["themes", "keywords", "searchSummary"]
+                }
+            }
+        });
+
+        return JSON.parse(cleanJsonResponse(response.text || "{}")) as SemanticIndex;
+    } catch (e) {
+        console.warn("Indexing failed:", e);
+        return { themes: [], keywords: [], searchSummary: "No index available." };
+    }
+};
+
 export const cacheStep = async (transcriptionText: string): Promise<{ name: string, ttl: number } | undefined> => {
     if (transcriptionText.length < 500) return undefined;
 
@@ -114,7 +152,6 @@ export const cacheStep = async (transcriptionText: string): Promise<{ name: stri
         const ttlSeconds = 1200;
         const instruction = getCacheSystemInstruction();
         
-        // Cast to any to bypass strict SDK types if necessary for cache creation
         const cacheResult = await ai.caches.create({
             model: 'gemini-2.5-flash',
             contents: [{
@@ -127,7 +164,6 @@ export const cacheStep = async (transcriptionText: string): Promise<{ name: stri
             ttl: `${ttlSeconds}s`
         } as any);
         
-        console.log(`Cache created: ${cacheResult.name}`);
         return { name: cacheResult.name, ttl: ttlSeconds };
     } catch (error) {
         console.warn("Context caching failed:", error);

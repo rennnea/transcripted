@@ -21,17 +21,17 @@ const SkeletonLoader: React.FC<{ type: 'chart' | 'list' }> = ({ type }) => {
         <div className="animate-pulse space-y-3">
             {type === 'chart' ? (
                 <>
-                    <div className="h-32 bg-brown-100/50 rounded-lg w-full"></div>
+                    <div className="h-32 bg-brown-100/50 dark:bg-zinc-800/50 rounded-lg w-full"></div>
                     <div className="grid grid-cols-2 gap-2">
-                        <div className="h-4 bg-brown-100/50 rounded w-full"></div>
-                        <div className="h-4 bg-brown-100/50 rounded w-full"></div>
+                        <div className="h-4 bg-brown-100/50 dark:bg-zinc-800/50 rounded w-full"></div>
+                        <div className="h-4 bg-brown-100/50 dark:bg-zinc-800/50 rounded w-full"></div>
                     </div>
                 </>
             ) : (
                 <>
-                    <div className="h-4 bg-brown-100/50 rounded w-3/4"></div>
-                    <div className="h-4 bg-brown-100/50 rounded w-1/2"></div>
-                    <div className="h-4 bg-brown-100/50 rounded w-5/6"></div>
+                    <div className="h-4 bg-brown-100/50 dark:bg-zinc-800/50 rounded w-3/4"></div>
+                    <div className="h-4 bg-brown-100/50 dark:bg-zinc-800/50 rounded w-1/2"></div>
+                    <div className="h-4 bg-brown-100/50 dark:bg-zinc-800/50 rounded w-5/6"></div>
                 </>
             )}
         </div>
@@ -45,35 +45,35 @@ const InsightsPanel: React.FC<InsightsPanelProps> = ({ transcription, isLoading 
   const groundingSources = useMemo(() => transcription?.sources?.slice(0, 5) ?? [], [transcription]);
 
   return (
-    <aside className="fixed top-0 right-0 h-full w-[380px] bg-white/70 backdrop-blur-2xl border-l border-white/20 p-8 overflow-y-auto transition-transform duration-500 transform translate-x-0 hidden lg:block shadow-[-10px_0_40px_rgba(0,0,0,0.02)]">
+    <aside className="fixed top-0 right-0 h-full w-[380px] bg-white/70 dark:bg-zinc-950/70 backdrop-blur-2xl border-l border-white/20 dark:border-white/5 p-8 overflow-y-auto transition-all duration-500 transform translate-x-0 hidden lg:block shadow-[-10px_0_40px_rgba(0,0,0,0.02)] dark:shadow-[-10px_0_40px_rgba(0,0,0,0.3)]">
       <div className="space-y-8">
-        <h2 className="text-xl font-bold text-brown-800 flex items-center space-x-2">
-            <AnalyticsIcon className="w-6 h-6 text-khaki-600"/>
+        <h2 className="text-xl font-bold text-brown-800 dark:text-zinc-100 flex items-center space-x-2">
+            <AnalyticsIcon className="w-6 h-6 text-khaki-600 dark:text-khaki-500"/>
             <span>Transcription Insights</span>
         </h2>
 
         {/* Speaker Distribution */}
-        <div className="bg-white/50 p-5 rounded-2xl border border-white/40 shadow-sm transition-all duration-300 hover:shadow-md">
-            <h3 className="font-semibold text-brown-800 flex items-center space-x-2 mb-4">
-                <SpeakerIcon className="w-5 h-5 text-brown-500"/>
+        <div className="bg-white/50 dark:bg-zinc-900/50 p-5 rounded-2xl border border-white/40 dark:border-white/5 shadow-sm transition-all duration-300 hover:shadow-md">
+            <h3 className="font-semibold text-brown-800 dark:text-zinc-200 flex items-center space-x-2 mb-4">
+                <SpeakerIcon className="w-5 h-5 text-brown-500 dark:text-zinc-500"/>
                 <span>Speaker Distribution</span>
             </h3>
             {isLoading ? <SkeletonLoader type="chart" /> : <SpeakerDistributionChart data={speakerData} />}
         </div>
         
         {/* Sentiment Distribution (Stacked Bar) */}
-        <div className="bg-white/50 p-5 rounded-2xl border border-white/40 shadow-sm transition-all duration-300 hover:shadow-md">
-            <h3 className="font-semibold text-brown-800 flex items-center space-x-2 mb-4">
-                <BarChartIcon className="w-5 h-5 text-brown-500"/>
+        <div className="bg-white/50 dark:bg-zinc-900/50 p-5 rounded-2xl border border-white/40 dark:border-white/5 shadow-sm transition-all duration-300 hover:shadow-md">
+            <h3 className="font-semibold text-brown-800 dark:text-zinc-200 flex items-center space-x-2 mb-4">
+                <BarChartIcon className="w-5 h-5 text-brown-500 dark:text-zinc-500"/>
                 <span>Sentiment Mix Over Time</span>
             </h3>
             {isLoading ? <SkeletonLoader type="chart" /> : <SentimentDistributionChart data={sentimentTrendData} />}
         </div>
 
         {/* Sentiment Trend */}
-        <div className="bg-white/50 p-5 rounded-2xl border border-white/40 shadow-sm transition-all duration-300 hover:shadow-md">
-            <h3 className="font-semibold text-brown-800 flex items-center space-x-2 mb-4">
-                <SentimentTrendIcon className="w-5 h-5 text-brown-500"/>
+        <div className="bg-white/50 dark:bg-zinc-900/50 p-5 rounded-2xl border border-white/40 dark:border-white/5 shadow-sm transition-all duration-300 hover:shadow-md">
+            <h3 className="font-semibold text-brown-800 dark:text-zinc-200 flex items-center space-x-2 mb-4">
+                <SentimentTrendIcon className="w-5 h-5 text-brown-500 dark:text-zinc-500"/>
                 <span>Sentiment Intensity</span>
             </h3>
             {isLoading ? <SkeletonLoader type="chart" /> : <SentimentTrendChart data={sentimentTrendData} />}
@@ -81,16 +81,16 @@ const InsightsPanel: React.FC<InsightsPanelProps> = ({ transcription, isLoading 
 
         {/* Sources */}
         {(groundingSources.length > 0 || isLoading) && (
-          <div className="bg-white/50 p-5 rounded-2xl border border-white/40 shadow-sm transition-all duration-300 hover:shadow-md">
-            <h3 className="font-semibold text-brown-800 flex items-center space-x-2 mb-4">
-                <LinkIcon className="w-5 h-5 text-brown-500"/>
+          <div className="bg-white/50 dark:bg-zinc-900/50 p-5 rounded-2xl border border-white/40 dark:border-white/5 shadow-sm transition-all duration-300 hover:shadow-md">
+            <h3 className="font-semibold text-brown-800 dark:text-zinc-200 flex items-center space-x-2 mb-4">
+                <LinkIcon className="w-5 h-5 text-brown-500 dark:text-zinc-500"/>
                 <span>Grounding Sources</span>
             </h3>
             {isLoading ? (
                 <SkeletonLoader type="list" />
             ) : groundingSources.length > 0 ? (
                 <>
-                    <p className="text-xs text-brown-500 mb-3">
+                    <p className="text-xs text-brown-500 dark:text-zinc-500 mb-3">
                     Consulted sources for factual verification:
                     </p>
                     <ul className="space-y-3">
@@ -100,11 +100,11 @@ const InsightsPanel: React.FC<InsightsPanelProps> = ({ transcription, isLoading 
                             href={source.web.uri} 
                             target="_blank" 
                             rel="noopener noreferrer" 
-                            className="text-brown-600 group-hover:text-khaki-700 transition-colors flex flex-col"
+                            className="text-brown-600 dark:text-zinc-400 group-hover:text-khaki-700 dark:group-hover:text-khaki-500 transition-colors flex flex-col"
                             title={source.web.uri}
                         >
                             <span className="font-medium group-hover:underline">{source.web.title || 'Untitled Source'}</span>
-                            <span className="text-[10px] text-brown-400 mt-0.5 truncate">{source.web.uri}</span>
+                            <span className="text-[10px] text-brown-400 dark:text-zinc-600 mt-0.5 truncate">{source.web.uri}</span>
                         </a>
                         </li>
                     ))}

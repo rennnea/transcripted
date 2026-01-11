@@ -12,27 +12,42 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             colors: {
               khaki: {
+                50: '#FEFBF6',
                 100: '#FDF6EC',
+                200: '#F9EAD3',
                 300: '#F2D8B3',
+                400: '#EABF8E',
                 500: '#E5B88E',
                 600: '#D4A276',
                 700: '#BC8A5F',
+                800: '#A1734D',
+                900: '#825C3E',
               },
               beige: {
                 50: '#FBF9F6',
                 100: '#F5F1ED',
                 200: '#EAE4DC',
                 300: '#DCD3C9',
+                400: '#C9BEB2',
               },
               brown: {
+                50: '#F4F2F1',
+                400: '#A3948A',
                 500: '#8A7A70',
+                600: '#75665D',
                 700: '#6B5D55',
                 800: '#4A403A',
+                900: '#332C28',
               }
+            },
+            letterSpacing: {
+              'tighter': '-0.05em',
+              'tight': '-0.025em',
             }
           }
         }
@@ -50,35 +65,42 @@
           "framer-motion": "https://esm.sh/framer-motion@11.0.8?external=react,react-dom",
           "lucide-react": "https://esm.sh/lucide-react@0.344.0?external=react,react-dom",
           "jspdf": "https://esm.sh/jspdf@2.5.1",
-          "d3": "https://esm.sh/d3@7.9.0"
+          "d3": "https://esm.sh/d3@7.9.0",
+          "wavesurfer.js": "https://esm.sh/wavesurfer.js@7.7.15"
         }
       }
     </script>
     <style>
       body {
         font-family: 'Inter', sans-serif;
+        -webkit-font-smoothing: antialiased;
       }
       .font-poppins {
         font-family: 'Poppins', sans-serif;
       }
-      /* Custom Scrollbar for a modern light look */
+      /* Improved scrollbars for dark mode */
       ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
+        width: 10px;
+        height: 10px;
       }
       ::-webkit-scrollbar-track {
-        background: #F5F1ED; /* beige-100 */
+        background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: #DCD3C9; /* beige-300 */
-        border-radius: 4px;
+        background: #DCD3C9;
+        border-radius: 20px;
+        border: 3px solid transparent;
+        background-clip: content-box;
+      }
+      .dark ::-webkit-scrollbar-thumb {
+        background: #3f3f46;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #BC8A5F; /* khaki-700 */
+        background-color: #BC8A5F;
       }
     </style>
   </head>
-  <body class="bg-beige-50">
+  <body class="bg-beige-50 dark:bg-zinc-950 transition-colors duration-500 overflow-x-hidden">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

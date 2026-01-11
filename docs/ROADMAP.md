@@ -1,3 +1,4 @@
+
 # Strategic Roadmap
 
 This document outlines the strategic direction and phased release plan for **TranscriptedAI**. It serves as a high-level guide for developers and stakeholders to understand the evolution of the product from a simple file transcriber to a comprehensive audio intelligence platform.
@@ -12,10 +13,15 @@ We aim to move beyond simple text transcription by leveraging Generative AI to p
 
 ## 2. Phased Release Plan
 
-### Phase 1: Interactive Fundamentals (v1.1)
-*Target: Q2 2025*
+### Phase 1: Core Intelligence & UX (v1.0 - v1.5) - *In Progress*
 
-The focus of this phase is to bridge the gap between static text and audio playback, making the transcription "alive" and editable.
+This phase establishes a robust, beautiful, and insightful user experience.
+
+- **Global Search & Semantic Indexing** `(Completed)`
+  - **Goal:** Allow users to instantly find relevant information across their entire library.
+  
+- **System-Aware Dark Mode (`UX-01`)** `(Completed)`
+  - **Goal:** Improve accessibility and reduce eye strain for low-light usage.
 
 - **Microphone Input & Live Streaming (`F-01`)**
   - **Goal:** Allow users to record meetings or voice notes directly in the browser.
@@ -29,11 +35,8 @@ The focus of this phase is to bridge the gap between static text and audio playb
   - **Goal:** Remove the hardcoded API key for production readiness.
   - **Implementation:** Secure local storage of user keys with validation checks.
 
-- **System-Aware Dark Mode (`UX-01`)**
-  - **Goal:** Improve accessibility and reduce eye strain for night-time usage.
-  - **Design:** Inverse "OLED" palette while maintaining the "Organic" design language.
 
-### Phase 2: Professional Tools (v1.5)
+### Phase 2: Professional Tools (v1.6 - v1.9)
 *Target: Q3 2025*
 
 This phase targets power users, journalists, and researchers who need specific output formats and higher accuracy for niche topics.
@@ -50,9 +53,9 @@ This phase targets power users, journalists, and researchers who need specific o
   - **Goal:** Make fact-checking instant.
   - **Implementation:** Clicking a source citation in the summary auto-scrolls to the relevant part of the transcript or audio.
 
-- **Mobile Interface Overhaul (`UX-03`)**
+- **Mobile Interface Overhaul (`UX-03`)** `(Partially Complete)`
   - **Goal:** Full feature parity on mobile.
-  - **Design:** Swipeable bottom drawers for Insights and Settings.
+  - **Design:** Swipeable bottom drawers for Insights and Settings; responsive charts.
 
 ### Phase 3: The Collaborative Platform (v2.0)
 *Target: 2026*
@@ -81,14 +84,5 @@ We are actively evaluating the following technologies for future inclusion:
 | :--- | :--- | :--- |
 | **Gemini Live API** | 🟢 Adopting | Real-time low-latency voice conversation with the transcript context. |
 | **WASM (FFmpeg)** | 🟡 Assessing | Client-side audio extraction from video files. |
-| **Vector Database (Local)** | 🟡 Assessing | Semantic search across the entire transcription history (e.g., "Find where we discussed Q3 goals"). |
+| **Vector Database (Local)** | 🟡 Assessing | Deeper semantic search across the entire transcription history (e.g., "Find where we discussed Q3 goals"). |
 | **React Native** | 🔴 Hold | Native mobile apps (currently focusing on PWA). |
-
----
-
-## 4. Success Metrics
-
-We measure the success of roadmap items based on:
-1.  **Transcription Accuracy:** WER (Word Error Rate) reduction via Custom Vocabulary.
-2.  **User Retention:** Return rate after implementing History Persistence.
-3.  **Engagement:** Interaction rate with the "Insights Panel" and "Chatbot".
