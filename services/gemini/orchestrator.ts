@@ -1,13 +1,14 @@
 
-import { TranscriptionOptions, RawTranscriptionData, AnalysisData, SemanticIndex } from "../../types";
-import { uploadAudioFile, transcribeStep, analyzeStep, cacheStep, indexStep } from "./api";
+import { TranscriptionOptions, RawTranscriptionData, FastAnalysisData, SummaryData, SemanticIndex } from "../../types";
+import { uploadAudioFile, transcribeStep, fastAnalysisStep, summaryStep, cacheStep, indexStep } from "./api";
 
 export const processAudioPipeline = async (
     file: File, 
     options: TranscriptionOptions
 ): Promise<{ 
     initialResult: RawTranscriptionData, 
-    analysisPromise: Promise<AnalysisData>,
+    fastAnalysisPromise: Promise<FastAnalysisData>,
+    summaryPromise: Promise<SummaryData>,
     indexPromise: Promise<SemanticIndex>,
     cachePromise: Promise<{ name: string, ttl: number } | undefined>
 }> => {
@@ -20,14 +21,16 @@ export const processAudioPipeline = async (
         .map(s => `[${s.timestamp}] ${s.speaker}: ${s.text}`)
         .join('\n');
 
-    // 2. Start Background Tasks (Non-Blocking Promises)
-    const analysisPromise = analyzeStep(fullText, options);
+    // 2. Start Parallel Background Tasks (Non-Blocking Promises)
+    const fastAnalysisPromise = fastAnalysisStep(fullText, options);
+    const summaryPromise = summaryStep(fullText, options);
     const indexPromise = indexStep(fullText);
     const cachePromise = cacheStep(fullText);
 
     return {
         initialResult: rawData,
-        analysisPromise,
+        fastAnalysisPromise,
+        summaryPromise,
         indexPromise,
         cachePromise
     };

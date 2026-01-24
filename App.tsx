@@ -25,6 +25,7 @@ const App: React.FC = () => {
   const [estimatedTokens, setEstimatedTokens] = useState<number | null>(null);
   const [showTestRunner, setShowTestRunner] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isInsightsPanelMinimized, setIsInsightsPanelMinimized] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('theme');
@@ -242,9 +243,12 @@ const App: React.FC = () => {
     }
   }
 
+  const mainPanelMargin = isInsightsPanelMinimized ? 'lg:mr-16' : 'lg:mr-[380px]';
+  const shouldShowPanel = (appState === 'result' || appState === 'chatbot') && transcriptionResult;
+
   const mainClasses = appState === 'sentiment-lab' 
     ? 'flex-1 overflow-x-hidden overflow-y-auto' 
-    : `flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8 transition-all duration-500 ${appState === 'result' && transcriptionResult ? 'lg:mr-[380px]' : ''}`;
+    : `flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8 transition-all duration-500 ${shouldShowPanel ? mainPanelMargin : ''}`;
 
   return (
     <div className="flex h-screen bg-[#FDFBF7] dark:bg-zinc-950 text-brown-800 dark:text-zinc-100 font-sans selection:bg-khaki-200 transition-colors duration-500">
@@ -272,8 +276,13 @@ const App: React.FC = () => {
         </main>
         {isAnalyzing && <StatusPill />}
       </div>
-      {(appState === 'result' || appState === 'chatbot') && transcriptionResult && (
-        <InsightsPanel transcription={transcriptionResult} isLoading={isAnalyzing} />
+      {shouldShowPanel && (
+        <InsightsPanel 
+            transcription={transcriptionResult} 
+            isLoading={isAnalyzing}
+            isMinimized={isInsightsPanelMinimized}
+            onToggleMinimize={() => setIsInsightsPanelMinimized(p => !p)}
+        />
       )}
       {showTestRunner && <TestRunner onClose={() => setShowTestRunner(false)} />}
     </div>

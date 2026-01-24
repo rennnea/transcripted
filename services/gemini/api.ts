@@ -3,12 +3,14 @@ import { Type } from "@google/genai";
 import { ai } from "./client";
 import { 
     transcriptionSchema, 
-    analysisSchema, 
+    fastAnalysisSchema,
+    summarySchema,
     getTranscriptionPrompt, 
-    getAnalysisPrompt,
+    getFastAnalysisPrompt,
+    getSummaryPrompt,
     getCacheSystemInstruction
 } from "./prompts";
-import { TranscriptionOptions, RawTranscriptionData, AnalysisData, SemanticIndex } from "../../types";
+import { TranscriptionOptions, RawTranscriptionData, FastAnalysisData, SummaryData, SemanticIndex } from "../../types";
 
 // Helper to clean markdown from JSON
 export const cleanJsonResponse = (text: string): string => {
@@ -59,26 +61,51 @@ export const transcribeStep = async (fileUri: string, mimeType: string, options:
     }
 };
 
-export const analyzeStep = async (transcriptionText: string, options: TranscriptionOptions): Promise<AnalysisData> => {
-    console.log("Step C: Performing analysis...");
-    
-    if (!transcriptionText || transcriptionText.length < 10) {
-        return {
-            summary: "",
-            sentiment: { overall: "Unknown", trend: [] },
-            entities: {},
-            sources: []
-        };
+export const fastAnalysisStep = async (transcriptionText: string, options: TranscriptionOptions): Promise<FastAnalysisData> => {
+    console.log("Step C.1: Performing fast analysis (Sentiment, Entities)...");
+
+    if (!options.enableSentimentAnalysis && !options.enableEntityExtraction) {
+        return { sentiment: { overall: "Disabled", trend: [] }, entities: {} };
     }
 
-    const prompt = getAnalysisPrompt(transcriptionText, options);
+    const prompt = getFastAnalysisPrompt(transcriptionText, options);
+
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash", 
+            contents: [{ parts: [{ text: prompt }] }],
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: fastAnalysisSchema,
+            }
+        });
+        
+        return JSON.parse(cleanJsonResponse(response.text || "{}")) as FastAnalysisData;
+
+    } catch (error) {
+        console.warn("Fast analysis step encountered an issue:", error);
+        return {
+            sentiment: { overall: "Unknown", trend: [] },
+            entities: {},
+        };
+    }
+};
+
+export const summaryStep = async (transcriptionText: string, options: TranscriptionOptions): Promise<SummaryData> => {
+    console.log("Step C.2: Performing summary generation...");
+
+    if (!options.enableSummary) {
+        return { summary: "Disabled by user.", sources: [] };
+    }
+
+    const prompt = getSummaryPrompt(transcriptionText, options);
     const config: any = {};
 
-    if (options.enableSearchGrounding) {
+    if (options.enableSummary && options.enableSearchGrounding) {
         config.tools = [{ googleSearch: {} }];
     } else {
         config.responseMimeType = "application/json";
-        config.responseSchema = analysisSchema;
+        config.responseSchema = summarySchema;
     }
 
     try {
@@ -90,18 +117,18 @@ export const analyzeStep = async (transcriptionText: string, options: Transcript
 
         const result = JSON.parse(cleanJsonResponse(response.text || "{}"));
         
-        if (options.enableSearchGrounding && response.candidates?.[0]?.groundingMetadata) {
+        if (options.enableSummary && options.enableSearchGrounding && response.candidates?.[0]?.groundingMetadata) {
             result.sources = response.candidates[0].groundingMetadata.groundingChunks;
+        } else {
+            result.sources = [];
         }
 
-        return result as AnalysisData;
+        return result as SummaryData;
 
     } catch (error) {
-        console.warn("Analysis step encountered an issue:", error);
+        console.warn("Summary step encountered an issue:", error);
         return {
-            summary: "Analysis failed to generate.",
-            sentiment: { overall: "Unknown", trend: [] },
-            entities: {},
+            summary: "Summary generation failed.",
             sources: []
         };
     }

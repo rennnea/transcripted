@@ -5,6 +5,16 @@ All notable changes to **TranscriptedAI** will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2025-07-05
+
+### Added
+- **Parallel Analysis Pipeline**: To significantly improve perceived performance, insights are now generated in parallel. Fast insights (sentiment, entities) powered by `gemini-2.5-flash` appear almost instantly after transcription, while the more complex summary from `gemini-3-pro-preview` is generated concurrently.
+
+### Changed
+- Refactored the `useGeminiPipeline` hook and `orchestrator` service to manage the new progressive, multi-threaded data flow, updating the UI as each piece of analysis completes.
+
+---
+
 ## [1.5.0] - 2025-06-25
 
 ### Added

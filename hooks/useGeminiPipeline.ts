@@ -67,16 +67,22 @@ export const useGeminiPipeline = () => {
             const duration = await getAudioDuration(file);
             stopProgressSimulation = simulateTranscriptionProgress(duration, setProgress);
 
-            const { initialResult, analysisPromise, indexPromise, cachePromise } = await processAudioPipeline(file, options);
+            const { 
+                initialResult, 
+                fastAnalysisPromise, 
+                summaryPromise,
+                indexPromise, 
+                cachePromise 
+            } = await processAudioPipeline(file, options);
 
             if (stopProgressSimulation) stopProgressSimulation();
             setProgress({ stage: 'Rendering text...', percentage: 100 });
 
-            // Show initial result immediately
+            // Show initial result immediately with placeholders
             const partialResult: TranscriptionResult = {
                 ...initialResult,
-                summary: "",
-                sentiment: { overall: "", trend: [] },
+                summary: "Analyzing...",
+                sentiment: { overall: "Analyzing...", trend: [] },
                 entities: {},
                 sources: []
             };
@@ -84,22 +90,28 @@ export const useGeminiPipeline = () => {
             setIsLoading(false);
             setIsAnalyzing(true);
 
-            // Wait for background tasks
-            const [analysisData, semanticIndex, cacheData] = await Promise.all([
-                analysisPromise, 
+            // Progressively update with fast analysis results
+            const fastData = await fastAnalysisPromise;
+            setResult(prev => prev ? { ...prev, ...fastData } : null);
+
+            // Await remaining tasks
+            const [summaryData, semanticIndex, cacheData] = await Promise.all([
+                summaryPromise,
                 indexPromise, 
                 cachePromise
             ]);
 
+            // Combine all data for the final result
             const finalResult: TranscriptionResult = {
                 ...initialResult,
-                ...analysisData,
-                semanticIndex // Include the searchable index
+                ...fastData,
+                ...summaryData,
+                semanticIndex
             };
 
             setResult(finalResult);
             if (cacheData) setActiveCacheName(cacheData.name);
-            setIsAnalyzing(false);
+            
 
             if (options.autoSave) {
                  await saveTranscription(file, cacheKey, finalResult, cacheData?.name, cacheData?.ttl);
@@ -108,6 +120,7 @@ export const useGeminiPipeline = () => {
         } catch (err) {
             if (stopProgressSimulation) stopProgressSimulation();
             setError(err instanceof Error ? err.message : "An unknown error occurred.");
+        } finally {
             setIsLoading(false);
             setIsAnalyzing(false);
         }

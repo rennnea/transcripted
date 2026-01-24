@@ -35,16 +35,23 @@ export interface RawTranscriptionData {
   transcription: TranscriptionSegment[];
 }
 
-// Stage 2 Output: Analysis
-export interface AnalysisData {
-  summary: string;
+// Stage 2, Part A: Fast Insights
+export interface FastAnalysisData {
   sentiment: {
     overall: string;
     trend: SentimentTrendPoint[];
   };
   entities: { [key: string]: string[] };
-  sources: any[];
 }
+
+// Stage 2, Part B: Complex Summary
+export interface SummaryData {
+    summary: string;
+    sources: any[];
+}
+
+// Stage 2 Combined: Analysis
+export interface AnalysisData extends FastAnalysisData, SummaryData {}
 
 // Combined Result stored in DB and used in UI
 export interface TranscriptionResult extends RawTranscriptionData, AnalysisData {

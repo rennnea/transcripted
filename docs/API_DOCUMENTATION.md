@@ -9,7 +9,7 @@ The **TranscriptedAI Service Layer** acts as the primary interface between the R
 
 The service utilizes a **Progressive Multi-Stage Pipeline** to optimize user experience:
 1.  **Stage 1 (Synchronous):** Strict transcription (audio-to-text).
-2.  **Stage 2 (Asynchronous/Parallel):** Deep reasoning (Summarization, Sentiment, Entity Extraction, Grounding), Semantic Indexing, and Context Caching.
+2.  **Stage 2 (Asynchronous/Parallel):** Parallel analysis for fast insights and complex summaries, plus semantic indexing and context caching.
 
 ---
 
@@ -38,7 +38,8 @@ export const processAudioPipeline = async (
     options: TranscriptionOptions
 ): Promise<{ 
     initialResult: RawTranscriptionData, 
-    analysisPromise: Promise<AnalysisData>,
+    fastAnalysisPromise: Promise<FastAnalysisData>,
+    summaryPromise: Promise<SummaryData>,
     indexPromise: Promise<SemanticIndex>,
     cachePromise: Promise<{ name: string, ttl: number } | undefined>
 }>
@@ -46,8 +47,9 @@ export const processAudioPipeline = async (
 
 **Returns:** A Promise that resolves to an object containing:
 - `initialResult`: The raw transcription data, available immediately after Stage 1.
-- `analysisPromise`: A promise that resolves later with the deep analysis object.
-- `indexPromise`: A promise that resolves later with the semantic index for searching.
+- `fastAnalysisPromise`: A promise that resolves quickly with sentiment and entity data.
+- `summaryPromise`: A promise that resolves with the summary and grounding sources.
+- `indexPromise`: A promise that resolves with the semantic index for searching.
 - `cachePromise`: A promise that resolves with cache metadata for the AI Chatbot.
 
 ---
@@ -68,15 +70,19 @@ export const processAudioPipeline = async (
 
 Once Stage 1 is complete, the following are triggered in parallel:
 
-#### C.1: Deep Analysis (`analyzeStep`)
-- **Model:** `gemini-3-pro-preview`
-- **Purpose:** Generates summary, sentiment, entities, and grounding sources.
+#### C.1: Fast Analysis (`fastAnalysisStep`)
+- **Model:** `gemini-2.5-flash`
+- **Purpose:** Generates sentiment and entities quickly.
 
-#### C.2: Semantic Indexing (`indexStep`)
+#### C.2: Summary Generation (`summaryStep`)
+- **Model:** `gemini-3-pro-preview`
+- **Purpose:** Generates the summary, potentially with Google Search grounding.
+
+#### C.3: Semantic Indexing (`indexStep`)
 - **Model:** `gemini-2.5-flash`
 - **Purpose:** Creates a searchable index (`themes`, `keywords`, `searchSummary`).
 
-#### C.3: Context Caching (`cacheStep`)
+#### C.4: Context Caching (`cacheStep`)
 - **Method:** `ai.caches.create`
 - **Purpose:** Caches transcript tokens for efficient Chatbot follow-up questions.
 

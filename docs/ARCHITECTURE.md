@@ -65,17 +65,20 @@ The core innovation of TranscriptedAI is its **Progressive Multi-Stage Pipeline*
     *   **UX:** Loading spinner -> Text appears.
 
 3.  **Stage 2: Parallel Background Processing (Non-Blocking)**
-    *   Once Stage 1 is complete, three asynchronous tasks are initiated in parallel.
-    *   **Task A: Deep Analysis**
-        *   **Goal:** Extract expensive insights (Sentiment, Summaries, Grounding).
+    *   Once Stage 1 is complete, multiple asynchronous tasks are initiated in parallel.
+    *   **Task A: Fast Analysis**
+        *   **Goal:** Extract low-latency insights (Sentiment, Entities).
+        *   **Model:** `gemini-2.5-flash`.
+        *   **UX:** `StatusPill` appears -> Sentiment/Entity cards populate almost instantly.
+    *   **Task B: Summary Generation**
+        *   **Goal:** Generate the more complex summary, potentially with grounding.
         *   **Model:** `gemini-3-pro-preview`.
-        *   **UX:** `StatusPill` appears -> Insights Panel populates dynamically.
-    *   **Task B: Semantic Indexing**
+        *   **UX:** Summary section shows "Analyzing..." then populates.
+    *   **Task C: Semantic Indexing**
         *   **Goal:** Prepare for Global Search.
         *   **Model:** `gemini-2.5-flash`.
-        *   **Output:** JSON object with `{ themes, keywords, searchSummary }`.
         *   **UX:** Silent background task.
-    *   **Task C: Context Caching**
+    *   **Task D: Context Caching**
         *   **Goal:** Prepare for Chatbot interactions.
         *   **Action:** `ai.caches.create` stores transcript tokens on Google's edge.
         *   **UX:** Silent background task, enables "Cached" badge in Chatbot.

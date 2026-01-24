@@ -25,11 +25,10 @@ export const transcriptionSchema = {
   required: ["transcription"],
 };
 
-// Schema for Stage 2: Analysis (Insights)
-export const analysisSchema = {
+// Schema for Stage 2, Part A: Fast Analysis (Sentiment, Entities)
+export const fastAnalysisSchema = {
     type: Type.OBJECT,
     properties: {
-        summary: { type: Type.STRING, description: "A structured summary." },
         sentiment: {
             type: Type.OBJECT,
             properties: {
@@ -58,6 +57,15 @@ export const analysisSchema = {
     }
 };
 
+// Schema for Stage 2, Part B: Summary
+export const summarySchema = {
+    type: Type.OBJECT,
+    properties: {
+        summary: { type: Type.STRING, description: "A structured summary." },
+    }
+};
+
+
 // --- PROMPT GENERATORS ---
 
 export const getTranscriptionPrompt = (options: TranscriptionOptions): string => {
@@ -67,23 +75,30 @@ export const getTranscriptionPrompt = (options: TranscriptionOptions): string =>
     timestamps are required in HH:MM:SS format.`;
 };
 
-export const getAnalysisPrompt = (transcriptionText: string, options: TranscriptionOptions): string => {
-    let prompt = `Analyze the provided transcript text.\n`;
-    
-    if (options.enableSummary) {
-        prompt += `Generate a ${options.summaryLength} ${options.summaryDetail} summary formatted as ${options.summaryStructure}.\n`;
-    }
+export const getFastAnalysisPrompt = (transcriptionText: string, options: TranscriptionOptions): string => {
+    let prompt = `Analyze the provided transcript text for sentiment and key entities.\n`;
+
     if (options.enableSentimentAnalysis) {
         prompt += `Perform sentiment analysis (Overall + Trend).\n`;
     }
     if (options.enableEntityExtraction) {
         prompt += `Extract entities (People, Organizations, Locations).\n`;
     }
+
+    prompt += `\nTRANSCRIPT:\n${transcriptionText.substring(0, 800000)}`;
     
-    // LOGIC FIX: Only ask for grounding if Summary is ALSO enabled, as the grounding instruction 
-    // specifically asks to "Verify facts in the summary".
+    return prompt;
+};
+
+export const getSummaryPrompt = (transcriptionText: string, options: TranscriptionOptions): string => {
+    let prompt = `Analyze the provided transcript text.\n`;
+    
+    if (options.enableSummary) {
+        prompt += `Generate a ${options.summaryLength} ${options.summaryDetail} summary formatted as ${options.summaryStructure}.\n`;
+    }
+    
     if (options.enableSummary && options.enableSearchGrounding) {
-        prompt += `\n\nVerify facts in the summary using Google Search. Return the result as a VALID JSON object matching this structure: ${JSON.stringify(analysisSchema)}`;
+        prompt += `\n\nVerify facts in the summary using Google Search. Return the result as a VALID JSON object matching this structure: ${JSON.stringify(summarySchema)}`;
     }
 
     prompt += `\nTRANSCRIPT:\n${transcriptionText.substring(0, 800000)}`;

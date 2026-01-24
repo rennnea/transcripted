@@ -10,6 +10,7 @@ TranscriptedAI is a modern web application that leverages the power of the Googl
 ## ✨ Key Features
 
 - **Accurate Audio Transcription**: Upload various audio formats (MP3, WAV, M4A, etc.) and receive a high-quality text transcription.
+- **⚡ Progressive Insight Loading**: Experience a faster workflow with our parallel processing pipeline. Initial transcription text appears instantly, followed immediately by fast insights like sentiment and entities, while the more complex summary is generated in the background.
 - **Speaker Diarization**: The AI automatically identifies and labels different speakers in the conversation for clear, readable output.
 - **AI-Powered Summarization**: Generate concise summaries of your transcriptions. Customize the summary's **length**, **detail level**, and **structure** (paragraph, bullets, key-value).
 - **Global Library Search**: A powerful semantic search allows you to find relevant transcripts across your entire history using keywords, themes, or concepts.
